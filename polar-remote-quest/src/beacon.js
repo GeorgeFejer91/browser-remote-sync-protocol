@@ -1,5 +1,7 @@
 export const BEACON_HEX_LENGTH = 24;
 export const BEACON_STORAGE_KEY = "polar-remote-quest.public-beacon-id.v1";
+/** Public fixed rendezvous address for the single-headset pilot; never a credential. */
+export const PILOT_BEACON_ID = "504f4c415252454d4f544531";
 
 const BEACON_PATTERN = /^[0-9a-f]{24}$/u;
 const encoder = new TextEncoder();

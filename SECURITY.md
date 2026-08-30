@@ -50,6 +50,14 @@ the wearer presses Accept for that request. Do not transplant this profile into
 a production identity boundary without an account-backed one-time invitation,
 reviewed PAKE, or equivalent authenticated bootstrap.
 
+The current hosted pilot goes one step further and compiles the same public
+Beacon ID into both the Pages controller and one test APK. It therefore needs
+no ID field and requests the complete remotely eligible app scope set by
+default. This is a public single-headset rendezvous, not authentication: any
+visitor can submit the request, concurrent deployments collide in one room,
+and the wearer pressing Accept remains the only grant boundary. Never reuse
+this fixed-channel mode for multiple or unattended production headsets.
+
 See [the native Meta Quest integration guide](docs/16-native-meta-quest-integration.md)
 for the complete boundary and qualification matrix.
 

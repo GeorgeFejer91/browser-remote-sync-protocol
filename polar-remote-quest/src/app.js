@@ -1,19 +1,8 @@
 import { PolarRemoteController } from "./controller.js";
 import { COMMANDS } from "./profile.js";
-import {
-  clearRememberedBeacon,
-  deriveBeaconInvitation,
-  formatBeaconId,
-  loadRememberedBeacon,
-  normalizeBeaconId,
-  storeRememberedBeacon,
-} from "./beacon.js";
+import { deriveBeaconInvitation, PILOT_BEACON_ID } from "./beacon.js";
 import { drawEcgPreview } from "./waveform.js";
 
-const beaconForm = document.querySelector("#beacon-form");
-const beaconInput = document.querySelector("#beacon-id");
-const rememberBeacon = document.querySelector("#remember-beacon");
-const findButton = document.querySelector("#find-headset");
 const requestButton = document.querySelector("#request-control");
 const stopButton = document.querySelector("#stop");
 const connectionStatus = document.querySelector("#connection-status");
@@ -29,7 +18,7 @@ const ecgCanvas = document.querySelector("#ecg-chart");
 const ecgStatus = document.querySelector("#ecg-status");
 const controller = new PolarRemoteController();
 
-let preparedInvitation;
+let requestInFlight = false;
 let routeValue = "Unknown";
 let commandButtons = [];
 
@@ -46,8 +35,7 @@ function render(snapshot = controller.snapshot()) {
     : "Not measured";
   freshness.textContent = snapshot.stale ? "Stale — holding last confirmed state" : (ready ? "Current" : "No target state");
   targetState.textContent = JSON.stringify({ revision: snapshot.revision, ...snapshot.state }, null, 2);
-  findButton.disabled = Boolean(controller.session);
-  requestButton.disabled = !preparedInvitation || Boolean(controller.session);
+  requestButton.disabled = requestInFlight || Boolean(controller.session);
   stopButton.disabled = !controller.session;
   commandButtons.forEach(({ command, button }) => {
     button.disabled = !controller.canSend(command);
@@ -115,40 +103,26 @@ controller.addEventListener("error", (event) => {
   render();
 });
 
-beaconForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  try {
-    const normalized = normalizeBeaconId(beaconInput.value);
-    preparedInvitation = await deriveBeaconInvitation(normalized);
-    beaconInput.value = formatBeaconId(normalized);
-    if (rememberBeacon.checked) storeRememberedBeacon(normalized);
-    else clearRememberedBeacon();
-    connectionStatus.textContent = "Beacon address resolved. Press Request control to contact the headset.";
-  } catch (error) {
-    preparedInvitation = undefined;
-    connectionStatus.textContent = error instanceof Error ? error.message : "Beacon ID is invalid.";
-  }
-  render();
-});
-
 requestButton.addEventListener("click", async () => {
-  if (!preparedInvitation) return;
-  const invitation = preparedInvitation;
-  preparedInvitation = undefined;
-  connectionStatus.textContent = "Requesting control. Put on the headset and choose Accept or Reject.";
+  if (requestInFlight || controller.session) return;
+  requestInFlight = true;
+  connectionStatus.textContent = "Requesting every remotely eligible app scope. Put on the headset and choose Accept or Reject.";
   render();
   try {
+    const invitation = await deriveBeaconInvitation(PILOT_BEACON_ID);
     await controller.connect(invitation);
   } catch (error) {
     connectionStatus.textContent = error instanceof Error ? error.message : "Unable to contact the headset.";
+  } finally {
+    requestInFlight = false;
     render();
   }
 });
 
 stopButton.addEventListener("click", async () => {
   await controller.stop();
-  preparedInvitation = undefined;
-  connectionStatus.textContent = "Stopped locally. Find the headset again to create a new request.";
+  requestInFlight = false;
+  connectionStatus.textContent = "Stopped locally. Press Request full app control to create a new request.";
   commandStatus.textContent = "No command pending.";
   routeValue = "Unknown";
   render();
@@ -156,13 +130,6 @@ stopButton.addEventListener("click", async () => {
 
 window.addEventListener("pagehide", () => { void controller.stop(); }, { once: true });
 window.addEventListener("resize", () => drawEcgPreview(ecgCanvas, controller.snapshot().state.ecgPreview));
-
-const rememberedBeacon = loadRememberedBeacon();
-if (rememberedBeacon) {
-  beaconInput.value = formatBeaconId(rememberedBeacon);
-  rememberBeacon.checked = true;
-  connectionStatus.textContent = "Public Beacon ID restored. Press Find headset; no connection has started.";
-}
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" })

@@ -500,6 +500,16 @@ The reference subpage implementing this profile is:
 https://georgefejer91.github.io/browser-remote-sync-protocol/polar-remote-quest/
 ```
 
+For the current single-headset test pilot, that hosted page and its matching APK
+compile in one fixed public Beacon ID. The UI therefore has no Beacon-ID or Find
+step: pressing **Request full app control** derives the fixed room/session
+bindings locally and requests every remotely eligible scope. The wearer must
+still press **Accept** or **Reject** in the Quest. This deliberate convenience
+mode means any site visitor can request control and all APKs built with the same
+constant collide in one global rendezvous room. Keep it confined to one attended
+pilot; restore a per-install address or authenticated bootstrap before deploying
+multiple headsets.
+
 It is a static PWA. GitHub Pages hosts only controller assets; VDO.Ninja still
 provides Internet signaling/ICE, and application commands remain on encrypted
 WebRTC data channels. This is not a WAN-disconnected offline-LAN design.

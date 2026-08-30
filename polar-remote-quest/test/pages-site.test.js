@@ -14,6 +14,7 @@ import {
   formatBeaconId,
   loadRememberedBeacon,
   normalizeBeaconId,
+  PILOT_BEACON_ID,
   storeRememberedBeacon,
 } from "../src/beacon.js";
 import { PolarRemoteController } from "../src/controller.js";
@@ -44,6 +45,17 @@ test("public Beacon IDs normalize and derive the native profile fields exactly",
     pairingSecret: "pAswMU3GCtYuydaEAvmtvx6a0qL4v3ZdhWaaI-5HLSY",
   });
   assert.ok(Object.isFrozen(invitation));
+});
+
+test("fixed pilot channel matches the native compiled fixture", async () => {
+  assert.equal(PILOT_BEACON_ID, "504f4c415252454d4f544531");
+  assert.deepEqual(await deriveBeaconInvitation(PILOT_BEACON_ID), {
+    beaconId: PILOT_BEACON_ID,
+    room: "prq_504f4c415252454d4f544531",
+    session: "prq.session.504f4c415252454d4f544531",
+    transportSecret: "_yTesUkZr8x1J78VZvL_U-ihTy8G0rY-MP2RpVH74mI",
+    pairingSecret: "VWHMQ_55XaHcO9zxWz7unOCcDYS1vIrln8F4dTJeojs",
+  });
 });
 
 test("persistence stores only the normalized public Beacon ID", () => {
@@ -112,19 +124,19 @@ test("GitHub Pages source keeps activation, approval, privacy, and path boundari
     readFile(join(root, "polar-remote-quest/src/styles-v3.css"), "utf8"),
   ]);
 
-  assert.match(html, /id="beacon-id"/u);
-  assert.match(html, />Find headset</u);
-  assert.match(html, />Request control</u);
+  assert.doesNotMatch(html, /id="beacon-id"|id="find-headset"|remember-beacon/u);
+  assert.match(html, />Request full app control</u);
   assert.match(html, /choose <strong>Accept<\/strong> or <strong>Reject<\/strong>/u);
-  assert.match(html, /public address, not a password/u);
+  assert.match(html, /fixed rendezvous channel/u);
   assert.match(html, /id="ecg-chart"/u);
   assert.doesNotMatch(html, /QR|transport-secret|pairing-secret|name="room"|name="session"/iu);
   assert.doesNotMatch(html, /unsafe-eval|unsafe-inline|connect-src[^;]*\*/u);
+  assert.match(html, /frame-ancestors 'none'/u);
   assert.match(html, /wss:\/\/wss\.vdo\.ninja https:\/\/turnservers\.vdo\.ninja/u);
   assert.match(html, /src="\.\.\/vendor\/vdoninja\/1\.5\.5\/vdoninja-sdk\.min\.js"/u);
 
-  assert.match(app, /beaconForm\.addEventListener\("submit"/u);
-  assert.match(app, /requestButton\.addEventListener\("click", async \(\) => \{[\s\S]*await controller\.connect\(invitation\)/u);
+  assert.doesNotMatch(app, /localStorage|beaconForm|rememberBeacon|findButton/u);
+  assert.match(app, /requestButton\.addEventListener\("click", async \(\) => \{[\s\S]*deriveBeaconInvitation\(PILOT_BEACON_ID\)[\s\S]*await controller\.connect\(invitation\)/u);
   assert.match(app, /preview\?\.values/u, "the display must consume the native values field");
   assert.doesNotMatch(app, /ecgPreview\?\.samples/u);
   assert.doesNotMatch(app, /window\.location\.hash|URLSearchParams|sessionStorage/u);
