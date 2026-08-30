@@ -1,5 +1,5 @@
 const STATIC_CACHE_PREFIX = "polar-remote-pages-static-";
-const STATIC_CACHE = `${STATIC_CACHE_PREFIX}v9-mirror-v4`;
+const STATIC_CACHE = `${STATIC_CACHE_PREFIX}v10-mirror-v5`;
 const STATIC_ASSETS = [
   "./",
   "./index.html",

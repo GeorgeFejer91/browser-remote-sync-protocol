@@ -12,6 +12,7 @@ test("service-worker upgrades evict stale app shells without caching runtime URL
   assert.match(worker, /caches\.open\(STATIC_CACHE\)[\s\S]*cache\.match\(event\.request\)/u);
   assert.match(worker, /\.\/src\/waveform\.js/u, "the offline app shell must include the waveform renderer");
   assert.match(worker, /\.\/src\/diagnostic\.js/u, "the offline app shell must include the diagnostic projector");
+  assert.match(app, /\.\/profile\.js\?v=5/u, "versioned module imports must bypass an older controlling worker");
 });
 
 test("fixed pilot channel needs no stored ID and page load stays network-inert", () => {

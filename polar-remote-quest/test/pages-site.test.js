@@ -152,7 +152,7 @@ test("GitHub Pages mirror keeps activation, approval, privacy, and shared-asset 
   assert.match(html, /frame-ancestors 'none'/u);
   assert.match(html, /wss:\/\/wss\.vdo\.ninja https:\/\/turnservers\.vdo\.ninja/u);
   assert.match(html, /src="\.\.\/vendor\/vdoninja\/1\.5\.5\/vdoninja-sdk\.min\.js"/u);
-  assert.match(html, /src="\.\/src\/app-fixed-v4\.js"/u);
+  assert.match(html, /src="\.\/src\/app-fixed-v4\.js\?v=5"/u);
   assert.match(html, /href="\.\/src\/styles-v4\.css"/u);
   assert.doesNotMatch(html, /app-fixed-v[23]|styles-v3/u);
 
@@ -162,6 +162,9 @@ test("GitHub Pages mirror keeps activation, approval, privacy, and shared-asset 
   assert.match(app, /if \(embeddedBlocked \|\| requestInFlight \|\| controller\.session\) return/u);
   assert.match(app, /Embedded control is disabled to prevent clickjacking/u);
   assert.match(app, /requestButton\.addEventListener\("click", async \(\) => \{[\s\S]*deriveBeaconInvitation\(PILOT_BEACON_ID\)[\s\S]*await controller\.connect\(invitation\)/u);
+  for (const moduleName of ["controller", "diagnostic", "profile", "waveform"]) {
+    assert.match(app, new RegExp(`\\./${moduleName}\\.js\\?v=5`, "u"));
+  }
   assert.match(app, /snapshot\.state\.ecgPreview/u, "the display must consume the bounded native preview field");
   assert.match(app, /projectDiagnosticPanel/u);
   assert.match(app, /renderCandidates\(diagnostic\.candidates, diagnostic\.selectedCandidateKey, diagnostic\.controls\.candidateSelection\)/u);
@@ -172,7 +175,7 @@ test("GitHub Pages mirror keeps activation, approval, privacy, and shared-asset 
   assert.doesNotMatch(app, /window\.location\.hash|URLSearchParams|sessionStorage/u);
   assert.doesNotMatch(beacon, /localStorage[\s\S]*(transportSecret|pairingSecret)/u);
   assert.match(worker, /fixed static allow-list/u);
-  assert.match(worker, /v9-mirror-v4/u);
+  assert.match(worker, /v10-mirror-v5/u);
   assert.match(worker, /requestUrl\.search/u);
   assert.doesNotMatch(worker, /localStorage|IndexedDB|pairingSecret|transportSecret/u);
   assert.match(styles, /\.metric-grid/u);

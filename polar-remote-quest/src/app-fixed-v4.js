@@ -1,8 +1,8 @@
-import { PolarRemoteController } from "./controller.js";
-import { humanState, projectDiagnosticPanel } from "./diagnostic.js";
-import { deriveBeaconInvitation, PILOT_BEACON_ID } from "./beacon-fixed-v1.js";
-import { commandForId, materializeCommand } from "./profile.js";
-import { drawEcgPreview } from "./waveform.js";
+import { PolarRemoteController } from "./controller.js?v=5";
+import { humanState, projectDiagnosticPanel } from "./diagnostic.js?v=5";
+import { deriveBeaconInvitation, PILOT_BEACON_ID } from "./beacon-fixed-v1.js?v=5";
+import { commandForId, materializeCommand } from "./profile.js?v=5";
+import { drawEcgPreview } from "./waveform.js?v=5";
 
 const requestButton = document.querySelector("#request-control");
 const stopButton = document.querySelector("#stop");

@@ -8,7 +8,7 @@ import {
   REQUESTED_SCOPES,
   redactStateForScopes,
   sanitizeRemoteState,
-} from "./profile.js";
+} from "./profile.js?v=5";
 
 export const MAX_PENDING_COMMANDS = 8;
 export const MAX_LATENCY_SAMPLES = 256;
