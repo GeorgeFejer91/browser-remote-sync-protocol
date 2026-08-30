@@ -102,13 +102,14 @@ test("ECG preview requires its negotiated scope and survives reliable projection
 });
 
 test("GitHub Pages source keeps activation, approval, privacy, and path boundaries", async () => {
-  const [html, app, beacon, worker, workflow, styles] = await Promise.all([
+  const [html, app, beacon, worker, workflow, styles, versionedStyles] = await Promise.all([
     readFile(join(root, "polar-remote-quest/index.html"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/app.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/beacon.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/sw.js"), "utf8"),
     readFile(join(root, ".github/workflows/pages.yml"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/styles.css"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/styles-v3.css"), "utf8"),
   ]);
 
   assert.match(html, /id="beacon-id"/u);
@@ -132,8 +133,12 @@ test("GitHub Pages source keeps activation, approval, privacy, and path boundari
   assert.match(worker, /requestUrl\.search/u);
   assert.doesNotMatch(worker, /localStorage|IndexedDB|pairingSecret|transportSecret/u);
   assert.match(styles, /\.signal-badge\s*\{[^}]*max-width:\s*100%[^}]*overflow-wrap:\s*anywhere/su);
+  assert.match(versionedStyles, /@import url\("\.\/styles\.css"\)/u);
+  assert.match(versionedStyles, /\.signal-badge\s*\{[^}]*max-width:\s*100%[^}]*overflow-wrap:\s*anywhere/su);
 
   assert.match(workflow, /branches: \[main\]/u);
+  assert.match(workflow, /actions\/checkout@v6/u);
+  assert.match(workflow, /actions\/setup-node@v6/u);
   assert.match(workflow, /actions\/configure-pages@v6/u);
   assert.match(workflow, /actions\/upload-pages-artifact@v5/u);
   assert.match(workflow, /actions\/deploy-pages@v5/u);
@@ -154,6 +159,7 @@ test("Pages builder emits a coherent subpage without altering pinned source byte
     "polar-remote-quest/src/app.js",
     "polar-remote-quest/src/beacon.js",
     "polar-remote-quest/src/controller.js",
+    "polar-remote-quest/src/styles-v3.css",
     "polar-remote-quest/src/waveform.js",
     "src/brsp.js",
     "src/vdo-ninja-transport.js",

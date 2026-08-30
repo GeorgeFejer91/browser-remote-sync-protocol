@@ -15,6 +15,7 @@ const PAGE_FILES = [
   "src/controller.js",
   "src/profile.js",
   "src/styles.css",
+  "src/styles-v3.css",
   "src/waveform.js",
 ];
 

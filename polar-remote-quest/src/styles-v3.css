@@ -1,0 +1,14 @@
+@import url("./styles.css");
+
+/* Versioned mobile compatibility shim so an older app-shell cache cannot keep
+   the long ECG scope status wider than the phone viewport. */
+.signal-badge {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .section-heading { flex-wrap: wrap; }
+}

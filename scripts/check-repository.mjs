@@ -50,6 +50,7 @@ const required = [
   "polar-remote-quest/src/controller.js",
   "polar-remote-quest/src/profile.js",
   "polar-remote-quest/src/styles.css",
+  "polar-remote-quest/src/styles-v3.css",
   "polar-remote-quest/src/waveform.js",
   "polar-remote-quest/test/pages-site.test.js",
   "polar-remote-quest/test/waveform.test.js",
