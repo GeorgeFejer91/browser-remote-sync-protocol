@@ -58,6 +58,8 @@ Protocol tokens begin with an ASCII letter or digit and contain only ASCII lette
 Before application dispatch, every envelope and nested value MUST satisfy all of these limits:
 
 - JSON only: null, boolean, string, finite number, array, or object;
+- arrays MUST be ordinary same-realm arrays with dense own data-property indices from `0` through `length - 1`; sparse arrays, inherited or accessor-backed indices, and additional string or symbol properties are rejected at the local encode/application boundary;
+- objects MUST be ordinary plain records with `Object.prototype` or null prototype; dates, maps, sets, typed/custom class instances, and enumerable accessor fields are rejected at the local encode/application boundary;
 - no `NaN`, positive/negative infinity, bigint, binary object, function, symbol, or undefined;
 - maximum nesting depth 8 below the validated value;
 - at most 256 entries in an array;
@@ -67,7 +69,7 @@ Before application dispatch, every envelope and nested value MUST satisfy all of
 - type-specific numeric ranges and token limits still apply;
 - the complete encoded message MUST fit its lane byte limit.
 
-An application SHOULD decode to a typed, copied structure containing only expected fields. It MUST NOT treat parsed objects as executable configuration or merge untrusted objects into privileged prototypes.
+An application SHOULD decode to a typed, copied structure containing only expected fields. It MUST NOT treat parsed objects as executable configuration or merge untrusted objects into privileged prototypes. A JavaScript `Proxy` is not a JSON wire type and cannot arrive from `JSON.parse`; local callers MUST NOT treat the encoder as a sandbox for untrusted in-memory objects or proxies, and should construct validated plain-data DTOs before encoding.
 
 ## Canonical JSON for the proof transcript
 
@@ -75,7 +77,7 @@ BRSP canonicalization is defined for the bounded JSON subset above:
 
 1. Object keys are sorted by JavaScript/Unicode code-unit lexicographic order.
 2. Each object is encoded with sorted keys, colon separators, comma separators, and no whitespace.
-3. Array order is retained.
+3. Array order is retained after the dense own data-property array boundary above has been validated.
 4. Primitive values use ECMAScript `JSON.stringify` representation.
 5. Only finite numbers and the restricted values above are permitted.
 
@@ -267,7 +269,7 @@ The target MUST NOT derive a function, selector, URL, module, SQL, shell command
 
 When `expectedRevision` is not null, the target SHOULD reject the command if its current revision differs. This is compare-and-set protection against overwriting state the controller has not observed.
 
-The target MUST deduplicate `commandId` within its retry/reconnect window. If a duplicate is received, it returns the cached `applied` result without applying the action again.
+The target MUST deduplicate `commandId` within its retry/reconnect window. The cache MUST bind the ID to the complete validated command body; reuse of an ID with a different body is a protocol error rather than a retry. If an identical duplicate is received, the target returns the cached logical `applied` body without applying the action again. It MUST wrap that body in a fresh `applied` envelope using the next current control sequence; replaying the old envelope would be rejected by an ordered receiver as a duplicate/non-newer sequence.
 
 ## Applied acknowledgement
 
@@ -362,7 +364,9 @@ An optional placement, diagnostic, string, or unrelated packet MUST NOT extend s
 - Changed state: application-defined cap, no more than 60 Hz; demo coalesces controller input and target state.
 - Unchanged heartbeat: 250 ms in the generic demo.
 - Stale threshold: 2,000 receiver-local ms without accepted state.
+- Ready-without-state behavior: the controller starts the freshness clock on entering `ready`; if no authoritative state arrives, it can become stale after the same threshold rather than remain indefinitely “not yet measured.”
 - Stale behavior: hold last accepted state and show a visible warning.
+- Disconnect behavior: record the edge immediately but continue evaluating freshness from the last accepted state (or ready baseline); channel close does not force a premature stale transition or make state age unknowable.
 - Recovery presentation: apply valid returning state immediately; report recovered after 3 consecutive valid frames.
 - Backpressure: if the state channel has queued bytes, retain only the newest pending state.
 

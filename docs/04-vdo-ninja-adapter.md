@@ -149,7 +149,7 @@ const peerKey = item.UUID ?? item.uuid ?? "";
 const label = item.label ?? item.streamLabel ?? item.name ?? "";
 ```
 
-Select only stream IDs with the application prefix. A production chooser should show multiple targets rather than silently guessing. The demo treats multiple targets in one supposedly unique room as an error.
+Select only stream IDs with the application prefix. The adapter may select the sole matching initial target, but if multiple targets exist it enters `selection-required` and exposes the bounded list. The application must call `selectTarget(streamId)` from an explicit user choice; it must not silently guess or switch ownership.
 
 Open the target without requesting media or optional resource/file capabilities:
 
@@ -170,7 +170,7 @@ On `channelOpen`, verify:
 - exact custom label;
 - channel object and open state.
 
-Bind messages to the accepted channel instance and selected stream. Late messages or close events from a previously selected channel MUST NOT affect the new selection.
+Bind the first accepted selected-stream channel to its SDK peer UUID. Every later custom lane must match the selected stream when supplied and the bound UUID. Bind messages to the accepted channel instance as well. Late messages or close events from a previous stream, UUID, or channel MUST NOT affect the current selection.
 
 ## The connection is already duplex
 

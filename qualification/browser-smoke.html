@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BRSP browser smoke qualification</title>
+    <style>
+      :root { color-scheme: light dark; font: 16px/1.5 system-ui, sans-serif; }
+      body { margin: 0; padding: 2rem; }
+      main { max-width: 48rem; margin: auto; }
+      [data-status="pass"] { color: #16803a; }
+      [data-status="fail"] { color: #c22; }
+      code { overflow-wrap: anywhere; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>BRSP browser smoke qualification</h1>
+      <p id="result" role="status" aria-live="polite" data-status="running">Running…</p>
+      <p>This deterministic page uses an in-process duplex transport. It does not contact VDO.Ninja or qualify a physical device.</p>
+      <pre><code id="evidence"></code></pre>
+    </main>
+    <script type="module" src="./browser-smoke.js"></script>
+  </body>
+</html>

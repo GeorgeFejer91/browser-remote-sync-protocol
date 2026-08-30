@@ -8,6 +8,11 @@ import {
   VdoNinjaTransport,
   generateVdoRoomId,
 } from "../../src/vdo-ninja-transport.js";
+import {
+  clearSessionMaterial,
+  resolveSessionMaterial,
+  showSessionMaterial,
+} from "./session-material.js";
 
 const $ = (selector) => document.querySelector(selector);
 const controls = ["x", "y", "hue", "scale", "pulse"].map((id) => $(`#${id}`));
@@ -42,7 +47,6 @@ let state = { revision: 0, scene: { ...DEFAULT_SCENE } };
 let transport;
 let connection;
 let heartbeatTimer;
-let intentHeartbeatTimer;
 let staleTimer;
 let pendingControllerScene;
 let pendingCommandId;
@@ -62,6 +66,39 @@ function normalizeScene(value = {}) {
     scale: clamp(value.scale, 0.6, 1.5),
     pulse: value.pulse === true,
   };
+}
+
+function validateScene(value, label = "scene") {
+  if (value === null || typeof value !== "object" || Array.isArray(value)
+    || Object.getPrototypeOf(value) !== Object.prototype) {
+    throw new TypeError(`${label} must be a plain object.`);
+  }
+  const keys = Object.keys(value).sort();
+  const expected = ["hue", "pulse", "scale", "x", "y"];
+  if (keys.length !== expected.length || keys.some((key, index) => key !== expected[index])) {
+    throw new TypeError(`${label} must contain exactly x, y, hue, scale, and pulse.`);
+  }
+  for (const key of ["x", "y", "hue", "scale"]) {
+    if (typeof value[key] !== "number" || !Number.isFinite(value[key])) {
+      throw new TypeError(`${label}.${key} must be a finite number.`);
+    }
+  }
+  if (typeof value.pulse !== "boolean") throw new TypeError(`${label}.pulse must be boolean.`);
+  if (value.x < -1 || value.x > 1 || value.y < -1 || value.y > 1
+    || value.hue < 0 || value.hue > 360 || value.scale < 0.6 || value.scale > 1.5) {
+    throw new RangeError(`${label} contains an out-of-range value.`);
+  }
+  return { x: value.x, y: value.y, hue: Math.round(value.hue), scale: value.scale, pulse: value.pulse };
+}
+
+function validateRemoteState(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)
+    || Object.getPrototypeOf(value) !== Object.prototype
+    || Object.keys(value).sort().join(",") !== "revision,scene"
+    || !Number.isSafeInteger(value.revision) || value.revision < 0) {
+    throw new TypeError("Remote state must contain exactly a non-negative revision and scene.");
+  }
+  return { revision: value.revision, scene: validateScene(value.scene, "remote state.scene") };
 }
 
 function appendLog(message) {
@@ -148,6 +185,7 @@ function flushControllerIntent() {
   intentFrame = undefined;
   if (role !== "controller" || connection?.phase !== "ready" || pendingCommandId || !pendingControllerScene) return;
   const scene = pendingControllerScene;
+  pendingControllerScene = undefined;
   try {
     connection.publishIntent(
       "scene.write",
@@ -162,14 +200,13 @@ async function start() {
   if (connection) return;
   elements.setupError.hidden = true;
   role = currentRole();
-  let room = elements.room.value.trim();
-  let secret = elements.secret.value;
-  if (role === "target") {
-    if (!room) room = generateVdoRoomId();
-    if (!secret) secret = randomToken(24);
-    elements.room.value = room;
-    elements.secret.value = secret;
-  }
+  const { room, secret } = resolveSessionMaterial({
+    role,
+    room: elements.room.value,
+    secret: elements.secret.value,
+    generateRoom: generateVdoRoomId,
+    generateSecret: () => randomToken(24),
+  });
   if (room.length < 8 || new TextEncoder().encode(secret).byteLength < 16) {
     showError("Enter the target’s room and a pairing secret of at least 16 UTF-8 bytes.");
     return;
@@ -181,9 +218,7 @@ async function start() {
   elements.room.disabled = true;
   elements.secret.disabled = true;
   elements.forceTurn.disabled = true;
-  elements.sessionValues.hidden = false;
-  elements.roomReadback.textContent = room;
-  elements.secretReadback.textContent = secret;
+  showSessionMaterial(elements, { room, secret });
   badge(elements.transportBadge, "Connecting", "wait");
 
   transport = new VdoNinjaTransport({
@@ -208,7 +243,7 @@ async function start() {
         return { ok: false, revision: state.revision, error: "revision_conflict" };
       }
       if (action === "set-scene") {
-        state = { revision: state.revision + 1, scene: normalizeScene(args.scene) };
+        state = { revision: state.revision + 1, scene: validateScene(args.scene, "command args.scene") };
       } else if (action === "reset") {
         state = { revision: state.revision + 1, scene: { ...DEFAULT_SCENE } };
       } else {
@@ -218,7 +253,12 @@ async function start() {
       return { ok: true, revision: state.revision, result: { scene: state.scene } };
     },
     applyIntent: ({ controls: incoming }) => {
-      state = { revision: state.revision + 1, scene: normalizeScene(incoming.scene) };
+      if (incoming === null || typeof incoming !== "object" || Array.isArray(incoming)
+        || Object.getPrototypeOf(incoming) !== Object.prototype
+        || Object.keys(incoming).join(",") !== "scene") {
+        throw new TypeError("Intent controls must contain exactly scene.");
+      }
+      state = { revision: state.revision + 1, scene: validateScene(incoming.scene, "intent controls.scene") };
       renderScene();
       return { revision: state.revision, state: { revision: state.revision, scene: { ...state.scene } } };
     },
@@ -248,9 +288,6 @@ async function start() {
       : undefined;
     if (role === "controller") {
       staleTimer = setInterval(checkStale, 250);
-      intentHeartbeatTimer = setInterval(() => {
-        if (!pendingCommandId && pendingControllerScene) connection?.publishIntent("scene.write", { scene: pendingControllerScene });
-      }, 100);
       flushControllerIntent();
     }
   });
@@ -278,6 +315,13 @@ async function start() {
 
 function acceptRemoteState(remote) {
   if (role !== "controller") return;
+  let accepted;
+  try {
+    accepted = validateRemoteState({ revision: remote.revision, scene: remote.state?.scene });
+  } catch (error) {
+    showError(error);
+    return;
+  }
   if (stale) {
     recoveryFrames += 1;
     if (recoveryFrames >= BRSP_RECOVERY_FRAMES) {
@@ -287,7 +331,7 @@ function acceptRemoteState(remote) {
       appendLog("Live state recovered after three consecutive accepted frames.");
     }
   }
-  renderScene({ revision: remote.revision, scene: remote.state.scene });
+  renderScene(accepted);
 }
 
 function checkStale() {
@@ -300,16 +344,15 @@ function checkStale() {
 
 async function stop() {
   clearInterval(heartbeatTimer);
-  clearInterval(intentHeartbeatTimer);
   clearInterval(staleTimer);
   heartbeatTimer = undefined;
-  intentHeartbeatTimer = undefined;
   staleTimer = undefined;
   if (intentFrame !== undefined) cancelAnimationFrame(intentFrame);
   intentFrame = undefined;
   const active = connection;
   connection = undefined;
   transport = undefined;
+  clearSessionMaterial(elements);
   try { await active?.close(); } catch { /* teardown remains local and final */ }
   elements.start.disabled = false;
   elements.stop.disabled = true;
@@ -347,7 +390,7 @@ elements.reset.addEventListener("click", () => {
 elements.start.addEventListener("click", () => { void start(); });
 elements.stop.addEventListener("click", () => { void stop(); });
 elements.clearLog.addEventListener("click", () => { elements.log.replaceChildren(); });
-window.addEventListener("pagehide", () => { void connection?.close(); }, { once: true });
+window.addEventListener("pagehide", () => { void stop(); }, { once: true });
 
 renderScene();
 updateRoleUi();

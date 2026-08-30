@@ -74,6 +74,20 @@ function eventOnce(target, type) {
   });
 }
 
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+function nextTurn() {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
 test("constructing the adapter performs no network or SDK work", () => {
   let constructed = 0;
   const transport = new VdoNinjaTransport({
@@ -84,6 +98,138 @@ test("constructing the adapter performs no network or SDK work", () => {
   });
   assert.equal(constructed, 0);
   assert.equal(transport.phase, "idle");
+});
+
+test("explicit Stop wins while Start is awaiting SDK connect", async () => {
+  const connectGate = deferred();
+  let sdk;
+  const transport = new VdoNinjaTransport({
+    role: "target",
+    room: "brsp_cancel_connect_room",
+    sharedSecret: "generated-secret-with-enough-entropy",
+    sdkFactory: (options) => {
+      sdk = new MockSdk(options);
+      sdk.connect = async () => {
+        sdk.calls.push(["connect"]);
+        await connectGate.promise;
+      };
+      return sdk;
+    },
+  });
+  const errors = [];
+  transport.addEventListener("status", (event) => {
+    if (event.detail.error) errors.push(event.detail.message);
+  });
+
+  const starting = transport.start();
+  await nextTurn();
+  assert.deepEqual(sdk.calls, [["connect"]]);
+  const stopping = transport.stop();
+  connectGate.resolve();
+
+  const [startResult, stopResult] = await Promise.all([starting, stopping]);
+  assert.equal(startResult.phase, "closed");
+  assert.equal(stopResult.phase, "closed");
+  assert.equal(transport.phase, "closed");
+  assert.equal(sdk.calls.some(([name]) => name === "joinRoom"), false);
+  assert.equal(sdk.calls.some(([name]) => name === "announce"), false);
+  assert.deepEqual(errors, []);
+});
+
+test("explicit Stop wins while Start is awaiting room join and never views a listing", async () => {
+  const joinGate = deferred();
+  let sdk;
+  const transport = new VdoNinjaTransport({
+    role: "controller",
+    room: "brsp_cancel_join_room",
+    sharedSecret: "generated-secret-with-enough-entropy",
+    sdkFactory: (options) => {
+      sdk = new MockSdk(options, [{
+        streamID: "brsp_target_cancelled",
+        UUID: "cancelled-uuid",
+        label: "Cancelled target",
+      }]);
+      sdk.joinRoom = async (joinOptions) => {
+        sdk.calls.push(["joinRoom", joinOptions]);
+        sdk.emit("listing", { list: sdk.listing });
+        await joinGate.promise;
+      };
+      return sdk;
+    },
+  });
+
+  const starting = transport.start();
+  await nextTurn();
+  assert.equal(sdk.calls.some(([name]) => name === "joinRoom"), true);
+  assert.equal(transport.sources.size, 1, "the early listing arrived before cancellation");
+  const stopping = transport.stop();
+  joinGate.resolve();
+
+  const [startResult, stopResult] = await Promise.all([starting, stopping]);
+  assert.equal(startResult.phase, "closed");
+  assert.equal(stopResult.phase, "closed");
+  assert.equal(sdk.calls.some(([name]) => name === "view"), false);
+  assert.equal(transport.sources.size, 0);
+  assert.equal(transport.discoveryReady, false);
+});
+
+test("failed Start removes old SDK listeners and clears selection before retry", async () => {
+  const sdks = [];
+  let attempt = 0;
+  const transport = new VdoNinjaTransport({
+    role: "controller",
+    room: "brsp_failed_start_retry_room",
+    sharedSecret: "generated-secret-with-enough-entropy",
+    sdkFactory: (options) => {
+      attempt += 1;
+      const listing = attempt === 1
+        ? [{ streamID: "brsp_target_first", UUID: "first-uuid", label: "First target" }]
+        : [{ streamID: "brsp_target_retry", UUID: "retry-uuid", label: "Retry target" }];
+      const instance = new MockSdk(options, listing);
+      if (attempt === 1) {
+        instance.view = async (streamId, viewOptions) => {
+          instance.calls.push(["view", streamId, viewOptions]);
+          throw new Error("first view failed");
+        };
+        instance.disconnect = async () => {
+          instance.calls.push(["disconnect"]);
+          instance.emit("videoaddedtoroom", {
+            streamID: "brsp_target_disconnect_stale",
+            UUID: "disconnect-stale-uuid",
+          });
+        };
+      }
+      sdks.push(instance);
+      return instance;
+    },
+  });
+
+  await assert.rejects(transport.start(), /first view failed/);
+  assert.equal(transport.phase, "error");
+  assert.equal(transport.sources.size, 0, "disconnect-time stale events cannot repopulate discovery");
+  assert.equal(transport.peers.size, 0);
+  assert.equal(transport.selectedStreamId, "");
+  assert.equal(transport.selectedPeerKey, "");
+  assert.equal(transport.discoveryReady, false);
+
+  sdks[0].emit("videoaddedtoroom", {
+    streamID: "brsp_target_late_stale",
+    UUID: "late-stale-uuid",
+  });
+  assert.equal(transport.sources.size, 0, "a failed SDK no longer has live listeners");
+
+  const retryResult = await transport.start();
+  assert.equal(retryResult.phase, "connecting-peer");
+  assert.equal(sdks[1].calls.find(([name]) => name === "view")?.[1], "brsp_target_retry");
+  assert.equal(transport.selectedStreamId, "brsp_target_retry");
+  assert.deepEqual([...transport.sources.keys()], ["brsp_target_retry"]);
+
+  sdks[0].emit("videoaddedtoroom", {
+    streamID: "brsp_target_old_sdk_after_retry",
+    UUID: "old-sdk-after-retry-uuid",
+  });
+  assert.deepEqual([...transport.sources.keys()], ["brsp_target_retry"]);
+  await transport.stop();
 });
 
 test("target announces data-only and opens reliable control plus unordered zero-retry state", async () => {
@@ -148,6 +294,88 @@ test("controller requests no audio or video and accepts the two custom channels"
     channel: new MockChannel(VDO_BRSP_STATE_CHANNEL, { ordered: false, maxRetransmits: 0 }),
   });
   assert.deepEqual(await opened, { peerKey: "target-uuid" });
+  await transport.stop();
+});
+
+test("multiple discovered targets require explicit selection and bind channels to that peer", async () => {
+  let sdk;
+  const transport = new VdoNinjaTransport({
+    role: "controller",
+    room: "brsp_multi_target_room",
+    sharedSecret: "generated-secret-with-enough-entropy",
+    sdkFactory: (options) => {
+      sdk = new MockSdk(options, [
+        { streamID: "brsp_target_alpha", UUID: "alpha-uuid", label: "Alpha" },
+        { streamID: "brsp_target_beta", UUID: "beta-uuid", label: "Beta" },
+      ]);
+      return sdk;
+    },
+  });
+  await transport.start();
+  assert.equal(transport.phase, "selection-required");
+  assert.equal(sdk.calls.some(([name]) => name === "view"), false);
+
+  await transport.selectTarget("brsp_target_beta");
+  assert.equal(sdk.calls.find(([name]) => name === "view")?.[1], "brsp_target_beta");
+  sdk.emit("channelOpen", {
+    uuid: "alpha-uuid",
+    label: `x-${VDO_BRSP_CONTROL_CHANNEL}`,
+    channel: new MockChannel(VDO_BRSP_CONTROL_CHANNEL),
+  });
+  assert.equal(transport.peers.has("alpha-uuid"), false, "a channel without streamID cannot bypass the UUID binding");
+
+  const opened = eventOnce(transport, "peeropen");
+  sdk.emit("channelOpen", {
+    uuid: "beta-uuid",
+    label: `x-${VDO_BRSP_CONTROL_CHANNEL}`,
+    channel: new MockChannel(VDO_BRSP_CONTROL_CHANNEL),
+  });
+  sdk.emit("channelOpen", {
+    uuid: "beta-uuid",
+    label: `x-${VDO_BRSP_STATE_CHANNEL}`,
+    channel: new MockChannel(VDO_BRSP_STATE_CHANNEL),
+  });
+  assert.deepEqual(await opened, { peerKey: "beta-uuid" });
+  const closed = eventOnce(transport, "peerclose");
+  sdk.emit("userLeft", { streamID: "brsp_target_beta" });
+  assert.equal((await closed).peerKey, "beta-uuid", "stream departure closes the mapped UUID peer");
+  await transport.stop();
+});
+
+test("an explicit target-selection failure keeps the live SDK retryable", async () => {
+  let sdk;
+  let failView = true;
+  const transport = new VdoNinjaTransport({
+    role: "controller",
+    room: "brsp_selection_retry_room",
+    sharedSecret: "generated-secret-with-enough-entropy",
+    sdkFactory: (options) => {
+      sdk = new MockSdk(options, [
+        { streamID: "brsp_target_retry_alpha", UUID: "retry-alpha-uuid", label: "Retry alpha" },
+        { streamID: "brsp_target_retry_beta", UUID: "retry-beta-uuid", label: "Retry beta" },
+      ]);
+      sdk.view = async (streamId, viewOptions) => {
+        sdk.calls.push(["view", streamId, viewOptions]);
+        if (failView) throw new Error("temporary explicit view failure");
+      };
+      return sdk;
+    },
+  });
+
+  await transport.start();
+  assert.equal(transport.phase, "selection-required");
+  await assert.rejects(transport.selectTarget("brsp_target_retry_beta"), /temporary explicit view failure/);
+  assert.equal(transport.phase, "selection-required");
+  assert.equal(transport.selectedStreamId, "");
+  assert.equal(transport.selectedPeerKey, "");
+  assert.equal(sdk.calls.some(([name]) => name === "disconnect"), false, "the active discovery SDK remains owned");
+  assert.equal((await transport.start()).phase, "selection-required", "Start cannot orphan the active SDK");
+
+  failView = false;
+  await transport.selectTarget("brsp_target_retry_alpha");
+  assert.equal(transport.phase, "connecting-peer");
+  assert.equal(transport.selectedStreamId, "brsp_target_retry_alpha");
+  assert.equal(sdk.calls.filter(([name]) => name === "connect").length, 1);
   await transport.stop();
 });
 

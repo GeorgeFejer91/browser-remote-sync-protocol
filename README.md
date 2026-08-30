@@ -14,7 +14,10 @@ The first adapter uses VDO.Ninja's **data-only WebRTC path**. No camera or micro
 - A reusable [transport-neutral JavaScript implementation](src/brsp.js).
 - A pinned [VDO.Ninja SDK 1.5.5 adapter](src/vdo-ninja-transport.js) with no media capture.
 - A [runnable two-browser example](examples/two-browser-demo/index.html) in which a controller changes a target-owned scene and both screens converge on the target's returned state.
+- A copyable [application-integration starter](examples/application-integration/README.md) with exact reducers, smartphone intent, a target-enforced dead-man lease, explicit lifecycle, and deterministic tests.
 - A dedicated [Marionette smartphone companion profile](docs/11-marionette-companion-profile.md) for fast touch controls, target leases, QR pairing, phone lifecycle, accessibility, and local-only pan/pinch perspective.
+- Last-mile recipes for a [browser target plus phone](docs/12-app-integration-recipes.md), a [native-shell WebView plus external browser](docs/13-native-shell-webview-integration.md), and [deployment/network/CSP](docs/14-deployment-network-and-csp.md).
+- A tiered [qualification record](docs/15-qualification-record.md) that separates deterministic browser evidence, VDO route evidence, physical-device evidence, and native-shell evidence.
 - A detailed [problem/solution ledger](docs/06-problems-and-solutions.md) extracted from building and physically qualifying Affect Tracker's remote Flubber, Universe, settings beacon, and Party modes.
 - Architecture, privacy, implementation, testing, transfer patterns, source provenance, and a production roadmap.
 
@@ -65,6 +68,24 @@ Open `http://127.0.0.1:4173/examples/two-browser-demo/` in two fresh browser win
 
 The example loads the official SDK from the repository's local `vendor/` directory. It does not depend on a runtime CDN, request media permission, or open a connection on page load.
 
+## Integrate it into an application
+
+Start with the [application-integration starter](examples/application-integration/README.md), not by copying the demo's UI. It separates:
+
+- a target-owned typed reducer and Marionette manifest;
+- reliable semantic commands from replaceable current intent;
+- authoritative state from local intent and presentation;
+- momentary controls with a target-local lease from persistent controls with explicit hold behavior;
+- session lifecycle from the chosen transport.
+
+Then choose the matching guide:
+
+- [browser target and smartphone companion](docs/12-app-integration-recipes.md);
+- [Tauri/native-shell WebView and external browser](docs/13-native-shell-webview-integration.md);
+- [static hosting, exact pinned VDO network inventory, LAN caveats, and CSP](docs/14-deployment-network-and-csp.md).
+
+A desktop WebView and phone on the same Wi-Fi can negotiate a direct WebRTC route, but the supplied VDO adapter still needs Internet signaling and external ICE infrastructure. It is not offline LAN discovery. An offline deployment needs owned authenticated signaling/raw WebRTC or an authenticated local WebSocket adapter.
+
 ## Choose the transport deliberately
 
 | Situation | Best starting point | Why |
@@ -103,11 +124,15 @@ Read in order for the full transfer guide:
 10. [Roadmap](docs/09-roadmap.md)
 11. [Sources and provenance](docs/10-sources-and-provenance.md)
 12. [Marionette smartphone companion profile](docs/11-marionette-companion-profile.md)
+13. [Copyable application integration recipes](docs/12-app-integration-recipes.md)
+14. [Native-shell WebView and external browser](docs/13-native-shell-webview-integration.md)
+15. [Deployment, network inventory, and CSP](docs/14-deployment-network-and-csp.md)
+16. [Qualification tiers and current record](docs/15-qualification-record.md)
 
 ## Status and provenance
 
-BRSP/1 is a pre-1.0 reference protocol. Automated tests cover encoding, bounds, unsigned sequencing, mutual proof, scope negotiation, command acknowledgement, authoritative state convergence, negotiated smartphone live intent, failure on a wrong secret, VDO data-only activation, delivery modes, and newest-only backpressure. The security limitations in [SECURITY.md](SECURITY.md) apply.
+BRSP/1 is a pre-1.0 reference protocol. Automated tests cover encoding, bounds, unsigned sequencing, mutual proof, scope negotiation, command acknowledgement and dedupe, authoritative state/freshness, negotiated smartphone live intent, exact application validation, target leases, explicit selection, VDO data-only activation, delivery modes, newest-only backpressure, and teardown. A deterministic [browser smoke fixture](qualification/README.md) exercises the real ES modules and Web Crypto without contacting signaling. The [current qualification record](docs/15-qualification-record.md) states the higher network, physical-device, and native-shell gates that remain open. The security limitations in [SECURITY.md](SECURITY.md) apply.
 
-The design is derived from the public Affect Tracker implementation and its attended VDO.Ninja qualification evidence, then generalized into a transport-neutral protocol. The exact source versions, standards, service documentation, measured findings, and code-reuse status are recorded in [the source ledger](docs/10-sources-and-provenance.md).
+The design is derived from the public Affect Tracker implementation and its attended VDO.Ninja qualification evidence, then generalized into a transport-neutral protocol. The newer desktop/browser Party case study at [`9e45c4c`](https://github.com/GeorgeFejer91/affect-tracker-web/tree/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb) demonstrates reciprocal desktop/phone host/guest topology and presentation-only desktop return; it remains an experimental public/passwordless architecture case study rather than BRSP authentication evidence. Exact source versions, standards, measured findings, security deltas, and code-reuse status are recorded in [the source ledger](docs/10-sources-and-provenance.md).
 
 Repository-authored material is MIT licensed. The vendored VDO.Ninja SDK retains MPL-2.0; see [third-party notices](THIRD_PARTY_NOTICES.md).

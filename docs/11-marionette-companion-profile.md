@@ -470,3 +470,22 @@ The repository's [`two-browser-demo`](../examples/two-browser-demo/index.html) i
 - bounded session log and complete Stop.
 
 It is intentionally generic. A production app should replace its controls with a validated target manifest or a purpose-designed companion layout and implement target leases for momentary controls.
+
+## Copyable application seam
+
+The [`application-integration` starter](../examples/application-integration/README.md) supplies the missing application boundary without claiming to be a general generated-control SDK. Its hand-written scene profile demonstrates:
+
+- inert construction and explicit Start/Stop;
+- a fixed deep-frozen non-executable manifest plus exact state/command/intent validators;
+- separate `scene.command` and `scene.intent` scopes;
+- reliable `reset`, `set-pulse`, and `stop-pointer` commands;
+- one complete current pointer plus persistent hue intent;
+- a target-local 500 ms pointer lease;
+- persistent hue hold without idle heartbeat/revision churn;
+- returned authoritative state kept separate from desired controller controls;
+- producer-first idempotent teardown;
+- deterministic protocol/application tests.
+
+Read [12 — Copyable application integration recipes](12-app-integration-recipes.md) for browser wiring. A Tauri or other native-shell target uses the same profile in its bundled WebView and crosses into native authority only through typed, revalidated product IPC; see [13 — Native-shell WebView integration](13-native-shell-webview-integration.md).
+
+The current evidence boundary is recorded in [15](15-qualification-record.md). The browser smoke fixture is deterministic in-process evidence, not public VDO, physical-phone, or packaged native-shell evidence.

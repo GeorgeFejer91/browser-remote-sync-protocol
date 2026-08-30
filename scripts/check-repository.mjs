@@ -18,7 +18,15 @@ const required = [
   "docs/09-roadmap.md",
   "docs/10-sources-and-provenance.md",
   "docs/11-marionette-companion-profile.md",
+  "docs/12-app-integration-recipes.md",
+  "docs/13-native-shell-webview-integration.md",
+  "docs/14-deployment-network-and-csp.md",
+  "docs/15-qualification-record.md",
+  "examples/application-integration/README.md",
   "examples/two-browser-demo/index.html",
+  "qualification/README.md",
+  "qualification/browser-smoke.html",
+  "qualification/browser-smoke.js",
   "src/brsp.js",
   "src/vdo-ninja-transport.js",
 ];
@@ -40,6 +48,23 @@ assert.match(source, /audio:\s*false[\s\S]*video:\s*false/, "Controller must req
 assert.match(source, /ordered:\s*false,\s*maxRetransmits:\s*0/, "State lane must be unordered with zero retransmits.");
 assert.doesNotMatch(source, /getUserMedia|captureStream/, "Reference transport must not capture media.");
 assert.doesNotMatch(source, /new\s+WebSocket/, "Reference adapter must not bypass the VDO.Ninja SDK signaling API.");
+
+const pinnedSdk = readFileSync(join(root, "vendor/vdoninja/1.5.5/vdoninja-sdk.js"), "utf8");
+assert.match(pinnedSdk, /wss:\/\/wss\.vdo\.ninja/, "Pinned SDK signaling host changed; update the deployment inventory deliberately.");
+assert.match(pinnedSdk, /https:\/\/turnservers\.vdo\.ninja\//, "Pinned SDK TURN-list origin changed; update CSP and deployment inventory deliberately.");
+assert.match(pinnedSdk, /stun:stun\.l\.google\.com:19302/, "Pinned SDK Google STUN default changed; update the network inventory.");
+assert.match(pinnedSdk, /stun:stun\.cloudflare\.com:3478/, "Pinned SDK Cloudflare STUN default changed; update the network inventory.");
+for (const relayHost of [
+  "turn-cae1.vdo.ninja",
+  "turn-usw2.vdo.ninja",
+  "turn-eu4.vdo.ninja",
+  "turn-eu1.vdo.ninja",
+  "turn-use1.vdo.ninja",
+  "www.turn.obs.ninja",
+  "turn.obs.ninja",
+]) {
+  assert.match(pinnedSdk, new RegExp(relayHost.replaceAll(".", "\\.")), `Pinned SDK fallback ${relayHost} changed; update the network inventory.`);
+}
 
 const html = readFileSync(join(root, "examples/two-browser-demo/index.html"), "utf8");
 assert.match(html, /vendor\/vdoninja\/1\.5\.5\/vdoninja-sdk\.min\.js/, "Demo must load the pinned local SDK.");

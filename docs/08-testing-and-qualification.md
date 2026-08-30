@@ -11,6 +11,8 @@ A remote-control feature can appear correct while two tabs share one computer an
 
 Passing one layer never implies that the other layers passed. Responsive device emulation is useful UI evidence, but it is not proof of mobile scheduling, radio changes, screen locking, or physical touch behavior.
 
+The repository's numbered evidence tiers and current bounded claims are published in [15 — Qualification tiers and current record](15-qualification-record.md). Use those tier names when summarizing a result.
+
 ## Evidence record
 
 Every qualification record SHOULD identify:
@@ -41,15 +43,21 @@ The Node test suite uses paired in-memory lanes so it can deterministically cove
 | Area | Required assertion |
 | --- | --- |
 | Canonical encoding | Object key order is stable and invalid/non-finite/deep/oversized input is rejected. |
+| Plain-data boundary | Dates, maps, custom prototypes, object or array accessors, sparse arrays, extra array properties, and unsafe object properties are rejected rather than interpreted as JSON application data. |
 | Sequencing | Duplicate, old, half-range, and normal values behave correctly across unsigned 32-bit wrap. |
 | Authentication | Matching secrets prove both roles; a wrong secret cannot reach `ready`. |
 | Negotiation | Capabilities and scopes are the exact independent intersection. |
-| Authority | Controller command produces target application, `applied`, and returned target-owned state. |
+| Authority | Controller command produces target application, a fresh ordered `applied`, and returned target-owned state; duplicate command IDs reuse the cached result without reusing an old envelope sequence. |
 | Intent | Negotiated smartphone intent reaches only the target reducer and converges through returned state. |
+| Freshness | Controller state age begins at ready, is updated only by accepted authoritative state, and remains evaluable after an explicit disconnect. |
 | Backpressure | Replaceable state/intent retains the newest pending value instead of accumulating history. |
 | Activation | Constructing the VDO adapter does not construct/start the SDK. |
 | Data-only VDO | Target uses `announce()` and controller uses `view()` with audio/video/resources disabled. |
+| Selection | Multiple matching targets require explicit selection; custom channels remain bound to the selected stream and peer UUID. |
+| Lifecycle races | Stop wins in-flight connect/join/view work, failed starts clean up completely, stale SDK callbacks are inert, and an explicit selection failure remains retryable. |
+| Session secrecy | Demo stop clears generated pairing material synchronously and restart produces fresh values. |
 | Delivery modes | Control is ordered/reliable and live state is unordered with zero retransmits. |
+| Application seam | Fixed non-executable Marionette manifest, exact state/command/intent validation, revision conflict, momentary lease, persistent hold, and producer-first Stop are tested independently of transport. |
 | Supply chain | Pinned SDK files match recorded SHA-256 hashes and local links resolve. |
 
 For changes to protocol validation, add a negative test before changing behavior. For a new capability, test both negotiated and absent-capability paths.
@@ -75,9 +83,23 @@ The reference suite is a starting point. A production implementation SHOULD add 
 
 Cross-language implementations MUST share byte-for-byte canonical/HMAC fixtures. “Both sides use JSON” is not an interoperability test.
 
+## Deterministic browser smoke
+
+Serve the repository and open the browser fixture:
+
+```sh
+npm run serve
+```
+
+<http://127.0.0.1:4173/qualification/browser-smoke.html>
+
+This loads the real BRSP ES module and uses real browser Web Crypto with a deterministic in-process transport. It proves browser-level proof/scopes, reliable command/acknowledgement, replaceable intent, target-returned state, and teardown without making an external connection. Its source and exact limitation are documented in [`qualification/README.md`](../qualification/README.md).
+
+A phone-sized responsive viewport remains tier-2 simulated browser evidence. It is not VDO route evidence or a physical phone receipt.
+
 ## Local browser smoke test
 
-Start the static server:
+The following is an attended VDO.Ninja test, distinct from the deterministic browser fixture. Start the static server:
 
 ```sh
 npm run serve
@@ -230,7 +252,8 @@ A release profile SHOULD publish a table with each supported target/controller c
 
 Do not replace “not tested” with assumed parity. Keep raw evidence immutable and record any later interpretation separately.
 
+Copy the record template and inspect the current open matrix in [15 — Qualification tiers and current record](15-qualification-record.md).
+
 ## Current repository status
 
-The repository includes automated protocol/adapter tests and the contract checker described above. The generic demo is suitable for local browser smoke testing. Production identity, invitation expiry/revocation, target-side momentary control leases, multi-controller arbitration, and cross-browser physical-device qualification remain roadmap items and are not claimed complete.
-
+The repository includes automated protocol/adapter/application-seam tests, the contract checker, and a deterministic real-browser smoke fixture. The application starter implements a target-local lease for its bounded Marionette pointer profile; that does not constitute a general reusable companion SDK or physical-device qualification. The generic demo remains suitable for attended VDO browser smoke testing. Production identity, invitation expiry/revocation, multi-controller arbitration, public-VDO evidence for the current candidate, packaged native-shell/phone evidence, and cross-browser physical-device qualification remain open and are not claimed complete. See the dated [current record](15-qualification-record.md).

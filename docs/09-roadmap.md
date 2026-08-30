@@ -30,10 +30,13 @@ Deliverables:
 - reliable command/acknowledgement and snapshot flow;
 - replaceable controller intent and target state with newest-only backpressure;
 - responsive two-browser demo;
+- copyable transport-neutral application seam with exact Marionette reducer validation, target lease, persistent-control hold, and producer-first lifecycle;
 - Marionette smartphone profile and application threat model;
-- automated mock/adapter tests and vendored-file hash checks.
+- native-shell/WebView integration and deployment/CSP/network-inventory guides;
+- automated protocol, adapter, application-seam, and vendored-file hash checks;
+- deterministic real-browser ES-module/Web-Crypto smoke fixture and an evidence-tier/current-status record.
 
-Exit evidence is limited to the checks actually recorded for this commit. This phase does not supply accounts, revocation, a production signaling service, or a remotely safe universal browser controller.
+Exit evidence is limited to the checks actually recorded in [15 — Qualification tiers and current record](15-qualification-record.md). This phase does not supply accounts, revocation, a production signaling service, a packaged native-shell companion SDK, physical-device qualification, or a remotely safe universal browser controller.
 
 ## Phase 1 — Interoperability and protocol hardening
 
@@ -75,6 +78,8 @@ Exit gate:
 - lost release, screen lock, app switch, network transition, and target restart fixtures pass;
 - no momentary control remains active beyond the qualified target lease;
 - accessibility acceptance passes for every generated control kind.
+
+The phase-0 application starter proves one hand-written scene profile and lease with deterministic tests. It does not complete this phase's general schema, generated-control library, packages, PWA/invitation component, or physical mobile matrix.
 
 ## Phase 3 — Production identity, invitations, and policy
 
@@ -206,3 +211,4 @@ Potential `1.0` exit criteria:
 
 The smallest defensible product is one target, one explicitly approved phone, three or fewer narrow scopes, reliable buttons plus one leased joystick/slider profile, a backend one-time invitation, VDO data-only or existing authenticated WebSocket transport, visible route/stale/lease state, and a published physical-device qualification matrix. Expand only after that slice meets its gates.
 
+Use [12 — Application integration recipes](12-app-integration-recipes.md) for the application seam, [13 — Native-shell WebView integration](13-native-shell-webview-integration.md) for a desktop target, and [14 — Deployment/network/CSP](14-deployment-network-and-csp.md) before choosing infrastructure. The current evidence and untested gates remain explicit in [15](15-qualification-record.md).

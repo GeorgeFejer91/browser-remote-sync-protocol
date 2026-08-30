@@ -186,6 +186,8 @@ await transport.start();
 
 Constructing `VdoNinjaTransport` itself does not instantiate the SDK. `start()` does.
 
+For a separable reducer/session lifecycle rather than one demo page, use the [`application-integration` starter](../examples/application-integration/README.md) and [12 — Copyable application recipes](12-app-integration-recipes.md).
+
 ## Step 8 — Render protocol phases
 
 At minimum expose:
@@ -326,6 +328,8 @@ async function stop() {
 
 Page close/refresh is best-effort; local state must still reset to idle on the next load. Do not auto-resume from local storage.
 
+Use one idempotent lifecycle owner for Stop, `pagehide`, failed Start, component unmount, and native window destruction. The complete pattern is in [12](12-app-integration-recipes.md); native-shell cleanup is in [13](13-native-shell-webview-integration.md).
+
 ## Step 16 — Content Security Policy and hosting
 
 After identifying the exact VDO signaling and ICE configuration, deploy HTTPS with a restrictive CSP. A conceptual starting point is:
@@ -341,7 +345,7 @@ base-uri 'none';
 frame-ancestors 'none';
 ```
 
-STUN/TURN traffic is not fully described by CSP `connect-src`; browser/WebRTC network policy and enterprise firewalls also matter. Verify rather than copying placeholders.
+STUN/TURN traffic is not fully described by CSP `connect-src`; browser/WebRTC network policy and enterprise firewalls also matter. This snippet is conceptual. The exact pinned-SDK host/ICE inventory, copyable static header, and Tauri v2 CSP are in [14 — Deployment, network, and CSP](14-deployment-network-and-csp.md); do not deploy the placeholders above.
 
 ## Step 17 — Qualify claims
 
@@ -360,4 +364,4 @@ Pass automated codec/state-machine/adapter tests first. Then use two fresh brows
 
 Do not relabel a same-PC result as physical phone/Quest evidence, a force-relay flag as relay evidence, synthetic input as physical sensor evidence, or an old commit's result as current-build evidence.
 
-The full matrix is in [08 — Testing and qualification](08-testing-and-qualification.md).
+The full matrix is in [08 — Testing and qualification](08-testing-and-qualification.md), and the current bounded evidence/open gates are in [15 — Qualification record](15-qualification-record.md).

@@ -97,8 +97,12 @@ export class VdoNinjaTransport extends EventTarget {
     this.peers = new Map();
     this.sources = new Map();
     this.selectedStreamId = "";
+    this.selectedPeerKey = "";
+    this.discoveryReady = false;
     this.qualityTimer = undefined;
     this.tearingDown = false;
+    this.lifecycleGeneration = 0;
+    this.stopPromise = undefined;
   }
 
   snapshot() {
@@ -117,116 +121,195 @@ export class VdoNinjaTransport extends EventTarget {
     this.dispatchEvent(detailEvent("status", { ...this.snapshot(), message, error }));
   }
 
-  listen(type, handler) {
-    this.sdk.addEventListener(type, handler);
-    this.listeners.push([type, handler]);
+  isCurrentSdk(sdk, generation) {
+    return Boolean(sdk) && this.sdk === sdk && this.lifecycleGeneration === generation && !this.tearingDown;
+  }
+
+  listen(sdk, generation, type, handler) {
+    const guardedHandler = (event) => {
+      if (this.isCurrentSdk(sdk, generation)) handler(event);
+    };
+    sdk.addEventListener(type, guardedHandler);
+    this.listeners.push([sdk, type, guardedHandler]);
+  }
+
+  removeSdkListeners(sdk) {
+    const retained = [];
+    for (const [listenerSdk, type, handler] of this.listeners) {
+      if (listenerSdk !== sdk) {
+        retained.push([listenerSdk, type, handler]);
+        continue;
+      }
+      try { listenerSdk.removeEventListener(type, handler); } catch { /* best-effort listener cleanup */ }
+    }
+    this.listeners = retained;
+  }
+
+  resetSessionState() {
+    if (this.qualityTimer !== undefined) clearInterval(this.qualityTimer);
+    this.qualityTimer = undefined;
+    for (const peerKey of [...this.peers.keys()]) this.closePeer(peerKey);
+    this.sources.clear();
+    this.selectedStreamId = "";
+    this.selectedPeerKey = "";
+    this.discoveryReady = false;
+  }
+
+  async cancelledStartSnapshot(sdk) {
+    this.removeSdkListeners(sdk);
+    if (this.stopPromise) {
+      try { await this.stopPromise; } catch { /* Stop owns signaling cleanup errors. */ }
+    }
+    return this.snapshot();
   }
 
   async start() {
     if (this.phase !== "idle" && this.phase !== "error") return this.snapshot();
+    const generation = ++this.lifecycleGeneration;
     this.tearingDown = false;
+    this.resetSessionState();
     this.phase = "connecting";
     this.emitStatus("Connecting to VDO.Ninja signaling.");
     let stage = "constructing the SDK";
+    let sdk;
     try {
-      this.sdk = this.sdkFactory({
+      sdk = this.sdkFactory({
         password: this.sharedSecret,
         salt: VDO_BRSP_SALT,
         forceTURN: this.forceTurn,
       });
-      this.installSdkListeners();
+      this.sdk = sdk;
+      this.installSdkListeners(sdk, generation);
       stage = "connecting to signaling";
-      await this.sdk.connect();
+      await sdk.connect();
+      if (!this.isCurrentSdk(sdk, generation)) return this.cancelledStartSnapshot(sdk);
       stage = "joining the discovery room";
-      await this.sdk.joinRoom({ room: this.room, password: this.sharedSecret });
+      await sdk.joinRoom({ room: this.room, password: this.sharedSecret });
+      if (!this.isCurrentSdk(sdk, generation)) return this.cancelledStartSnapshot(sdk);
       if (this.role === "target") {
         stage = "announcing the data-only target";
-        await this.sdk.announce({ streamID: this.streamId, label: this.label });
+        await sdk.announce({ streamID: this.streamId, label: this.label });
+        if (!this.isCurrentSdk(sdk, generation)) return this.cancelledStartSnapshot(sdk);
         this.phase = "discoverable";
         this.emitStatus("Data-only target announced; waiting for a controller.");
       } else {
         this.phase = "discovering";
+        this.discoveryReady = true;
         this.emitStatus("Looking for the target in the private room.");
-        this.selectOnlyTarget();
+        await this.selectOnlyTarget({ sdk, generation });
+        if (!this.isCurrentSdk(sdk, generation)) return this.cancelledStartSnapshot(sdk);
       }
       this.qualityTimer = setInterval(() => { void this.refreshQuality(); }, 2_000);
       return this.snapshot();
     } catch (error) {
+      if (sdk && !this.isCurrentSdk(sdk, generation)) return this.cancelledStartSnapshot(sdk);
+      const cleanupGeneration = ++this.lifecycleGeneration;
+      this.tearingDown = true;
+      if (sdk) this.removeSdkListeners(sdk);
+      this.resetSessionState();
+      await this.stopSdk(sdk);
+      if (this.lifecycleGeneration !== cleanupGeneration) return this.cancelledStartSnapshot(sdk);
+      this.tearingDown = false;
       this.phase = "error";
       const message = `${stage}: ${error instanceof Error ? error.message : String(error)}`;
       this.emitStatus(message, true);
-      await this.stopSdk();
       throw new Error(`VDO.Ninja transport failed while ${message}`, { cause: error });
     }
   }
 
-  installSdkListeners() {
-    this.listen("listing", (event) => this.addListing(event.detail));
-    this.listen("videoaddedtoroom", (event) => this.addSource(event.detail));
-    this.listen("userLeft", (event) => this.removePeerOrSource(event.detail));
-    this.listen("dataChannelOpen", (event) => {
+  installSdkListeners(sdk, generation) {
+    this.listen(sdk, generation, "listing", (event) => this.addListing(event.detail));
+    this.listen(sdk, generation, "videoaddedtoroom", (event) => this.addSource(event.detail));
+    this.listen(sdk, generation, "userLeft", (event) => this.removePeerOrSource(event.detail));
+    this.listen(sdk, generation, "dataChannelOpen", (event) => {
       if (this.role === "target") void this.openTargetChannels(event.detail?.uuid);
     });
-    this.listen("channelOpen", (event) => {
+    this.listen(sdk, generation, "channelOpen", (event) => {
       if (this.role === "controller") this.acceptControllerChannel(event.detail);
     });
-    this.listen("dataChannelClose", (event) => this.markPeerClosed(event.detail?.uuid, "VDO.Ninja control channel closed."));
-    this.listen("connectionFailed", (event) => this.markPeerClosed(
+    this.listen(sdk, generation, "dataChannelClose", (event) => this.markPeerClosed(event.detail?.uuid, "VDO.Ninja control channel closed."));
+    this.listen(sdk, generation, "connectionFailed", (event) => this.markPeerClosed(
       event.detail?.uuid,
       `Peer connection failed: ${event.detail?.reason ?? "unknown reason"}`,
     ));
-    this.listen("error", (event) => this.emitStatus(
+    this.listen(sdk, generation, "error", (event) => this.emitStatus(
       event.detail?.error?.message ?? event.detail?.error ?? event.detail?.message ?? "VDO.Ninja error",
       true,
     ));
   }
 
   addListing(detail) {
-    if (Array.isArray(detail?.list)) detail.list.forEach((item) => this.addSource(item));
+    if (Array.isArray(detail?.list)) detail.list.forEach((item) => this.addSource(item, { deferSelection: true }));
     else this.addSource(detail);
+    if (this.discoveryReady) void this.selectOnlyTarget().catch(() => {});
   }
 
-  addSource(value) {
+  addSource(value, { deferSelection = false } = {}) {
     if (this.role !== "controller") return;
     const item = sourceItem(value);
     if (!item.streamId.startsWith(VDO_BRSP_STREAM_PREFIX)) return;
     this.sources.set(item.streamId, item);
     this.emitStatus(`Discovered ${item.label || item.streamId}.`);
-    this.selectOnlyTarget();
+    if (this.discoveryReady && !deferSelection) void this.selectOnlyTarget().catch(() => {});
   }
 
-  async selectOnlyTarget() {
-    if (this.role !== "controller" || !this.sdk || this.selectedStreamId || this.sources.size === 0) return;
+  async selectOnlyTarget({ sdk = this.sdk, generation = this.lifecycleGeneration } = {}) {
+    if (this.role !== "controller" || !this.isCurrentSdk(sdk, generation) || this.selectedStreamId || this.sources.size === 0) return;
     if (this.sources.size > 1) {
       this.phase = "selection-required";
-      this.emitStatus("More than one target was found; use a unique room identifier.", true);
+      this.emitStatus("More than one target was found; explicitly select the intended target.", true);
       return;
     }
     const [source] = this.sources.values();
+    await this.selectTarget(source.streamId, { sdk, generation });
+  }
+
+  async selectTarget(streamId, { sdk = this.sdk, generation = this.lifecycleGeneration } = {}) {
+    if (this.role !== "controller" || !this.isCurrentSdk(sdk, generation)) {
+      throw new Error("Only a started controller can select a target.");
+    }
+    if (this.selectedStreamId) {
+      if (streamId === this.selectedStreamId) return this.snapshot();
+      throw new Error("A controller is already bound to a target; stop before selecting another one.");
+    }
+    const source = this.sources.get(streamId);
+    if (!source) throw new Error("The selected target is not present in the authenticated discovery room.");
+    const retryPhase = this.sources.size > 1 ? "selection-required" : "discovering";
     this.selectedStreamId = source.streamId;
+    this.selectedPeerKey = source.peerKey;
     this.phase = "connecting-peer";
     this.emitStatus(`Opening a data-only connection to ${source.label || source.streamId}.`);
     try {
-      await this.sdk.view(source.streamId, {
+      await sdk.view(source.streamId, {
         audio: false,
         video: false,
         downloads: false,
         allowresources: false,
         label: "BRSP controller",
       });
+      if (!this.isCurrentSdk(sdk, generation)) return this.cancelledStartSnapshot(sdk);
+      return this.snapshot();
     } catch (error) {
-      this.phase = "error";
+      if (!this.isCurrentSdk(sdk, generation)) return this.cancelledStartSnapshot(sdk);
+      this.selectedStreamId = "";
+      this.selectedPeerKey = "";
+      this.phase = retryPhase;
       this.emitStatus(error instanceof Error ? error.message : String(error), true);
+      throw error;
     }
   }
 
   removePeerOrSource(detail = {}) {
     const identifier = detail.UUID ?? detail.uuid ?? detail.streamID ?? detail.streamId;
     if (!identifier) return;
+    const peerKeys = new Set([identifier]);
     for (const [streamId, source] of this.sources) {
-      if (streamId === identifier || source.peerKey === identifier) this.sources.delete(streamId);
+      if (streamId === identifier || source.peerKey === identifier) {
+        if (source.peerKey) peerKeys.add(source.peerKey);
+        this.sources.delete(streamId);
+      }
     }
-    this.markPeerClosed(identifier, "Peer left the VDO.Ninja room.");
+    for (const peerKey of peerKeys) this.markPeerClosed(peerKey, "Peer left the VDO.Ninja room.");
   }
 
   peerRecord(peerKey) {
@@ -247,19 +330,29 @@ export class VdoNinjaTransport extends EventTarget {
 
   async openTargetChannels(peerKey) {
     if (!peerKey || this.tearingDown) return;
+    const sdk = this.sdk;
+    const generation = this.lifecycleGeneration;
+    if (!this.isCurrentSdk(sdk, generation)) return;
     const peer = this.peerRecord(peerKey);
     if (peer.opening || peer.opened) return;
     peer.opening = true;
     try {
       const [control, state] = await Promise.all([
-        this.sdk.openChannel(peerKey, VDO_BRSP_CONTROL_CHANNEL, { ordered: true }),
-        this.sdk.openChannel(peerKey, VDO_BRSP_STATE_CHANNEL, { ordered: false, maxRetransmits: 0 }),
+        sdk.openChannel(peerKey, VDO_BRSP_CONTROL_CHANNEL, { ordered: true }),
+        sdk.openChannel(peerKey, VDO_BRSP_STATE_CHANNEL, { ordered: false, maxRetransmits: 0 }),
       ]);
+      if (!this.isCurrentSdk(sdk, generation) || this.peers.get(peerKey) !== peer) {
+        try { control.close(); } catch { /* stale channel */ }
+        try { state.close(); } catch { /* stale channel */ }
+        return;
+      }
       this.attachChannel(peer, "control", control);
       this.attachChannel(peer, "state", state);
       this.finishPeerOpen(peer);
     } catch (error) {
-      this.markPeerClosed(peerKey, error instanceof Error ? error.message : String(error));
+      if (this.isCurrentSdk(sdk, generation)) {
+        this.markPeerClosed(peerKey, error instanceof Error ? error.message : String(error));
+      }
     } finally {
       peer.opening = false;
     }
@@ -268,8 +361,10 @@ export class VdoNinjaTransport extends EventTarget {
   acceptControllerChannel(detail = {}) {
     if (!detail.uuid || !detail.channel) return;
     if (detail.streamID && this.selectedStreamId && detail.streamID !== this.selectedStreamId) return;
+    if (this.selectedPeerKey && detail.uuid !== this.selectedPeerKey) return;
     const lane = normalizeChannelLabel(detail.label);
     if (lane !== VDO_BRSP_CONTROL_CHANNEL && lane !== VDO_BRSP_STATE_CHANNEL) return;
+    if (!this.selectedPeerKey) this.selectedPeerKey = detail.uuid;
     const peer = this.peerRecord(detail.uuid);
     this.attachChannel(peer, lane === VDO_BRSP_CONTROL_CHANNEL ? "control" : "state", detail.channel);
     this.finishPeerOpen(peer);
@@ -369,9 +464,12 @@ export class VdoNinjaTransport extends EventTarget {
 
   async refreshQuality() {
     if (!this.sdk?.getPeerQuality || this.tearingDown) return;
+    const sdk = this.sdk;
+    const generation = this.lifecycleGeneration;
     for (const peerKey of this.peers.keys()) {
       try {
-        const quality = await this.sdk.getPeerQuality(peerKey);
+        const quality = await sdk.getPeerQuality(peerKey);
+        if (!this.isCurrentSdk(sdk, generation) || !this.peers.has(peerKey)) return;
         this.dispatchEvent(detailEvent("quality", {
           peerKey,
           route: quality?.relayed === true ? "relay" : quality?.relayed === false ? "direct" : "unknown",
@@ -383,28 +481,31 @@ export class VdoNinjaTransport extends EventTarget {
     }
   }
 
-  async stopSdk() {
-    const sdk = this.sdk;
-    this.sdk = undefined;
+  async stopSdk(sdk = this.sdk) {
+    if (this.sdk === sdk) this.sdk = undefined;
     if (!sdk) return;
     try { await sdk.disconnect?.(); } catch { /* already disconnected */ }
   }
 
-  async stop() {
-    if (this.phase === "idle" || this.phase === "closed") return;
+  stop() {
+    if (this.stopPromise) return this.stopPromise;
+    if (this.phase === "idle" || this.phase === "closed") return Promise.resolve(this.snapshot());
+    this.stopPromise = this.performStop();
+    return this.stopPromise;
+  }
+
+  async performStop() {
+    const generation = ++this.lifecycleGeneration;
     this.tearingDown = true;
     this.phase = "stopping";
-    if (this.qualityTimer !== undefined) clearInterval(this.qualityTimer);
-    this.qualityTimer = undefined;
-    if (this.sdk) {
-      for (const [type, handler] of this.listeners) this.sdk.removeEventListener(type, handler);
+    const sdk = this.sdk;
+    if (sdk) this.removeSdkListeners(sdk);
+    this.resetSessionState();
+    await this.stopSdk(sdk);
+    if (this.lifecycleGeneration === generation) {
+      this.phase = "closed";
+      this.emitStatus("Transport closed.");
     }
-    this.listeners = [];
-    for (const peerKey of [...this.peers.keys()]) this.closePeer(peerKey);
-    this.sources.clear();
-    this.selectedStreamId = "";
-    await this.stopSdk();
-    this.phase = "closed";
-    this.emitStatus("Transport closed.");
+    return this.snapshot();
   }
 }

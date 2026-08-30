@@ -64,7 +64,7 @@ The reliable ordered control channel carries:
 - bounded protocol errors;
 - graceful close.
 
-The target deduplicates recent command IDs and returns the cached `applied` result for a duplicate. Production applications that reconnect must retain their dedupe window for as long as a controller can retry an old command, or make every command naturally idempotent.
+The target deduplicates recent command IDs and binds each ID to its validated command body. An identical retry returns the cached logical `applied` result without reapplying it, using a fresh ordered envelope sequence so the controller can accept it; reuse with a different body is a protocol error. Production applications that reconnect must retain their dedupe window for as long as a controller can retry an old command, or make every command naturally idempotent.
 
 ### 4. Replaceable state and live-intent plane
 
@@ -157,9 +157,9 @@ Transport connection is not protocol readiness. A channel can be open while the 
 
 ## Freshness and disconnects
 
-The reference profile repeats current state every 250 ms and marks state stale after two receiver-local seconds without an accepted frame. The receiver holds the last accepted state; it does not silently fall through to unrelated local input. After a stale period, the UI requires three consecutive valid state frames before reporting recovery, although each valid frame may be applied immediately.
+The reference profile repeats current state every 250 ms and marks state stale after two receiver-local seconds without an accepted frame. The controller begins that freshness clock when it enters `ready`, so a peer that never supplies initial state becomes stale rather than remaining indefinitely unmeasured. The receiver holds the last accepted state; it does not silently fall through to unrelated local input. After a stale period, the UI requires three consecutive valid state frames before reporting recovery, although each valid frame may be applied immediately.
 
-The values are a profile, not a universal constant. Choose them from the application's update rate, browser scheduling, route, and consequence of false stale/live transitions. A disconnect event should record the edge immediately but may share the same freshness grace as silent packet loss, so a repaired channel does not flash lost/live unnecessarily.
+The values are a profile, not a universal constant. Choose them from the application's update rate, browser scheduling, route, and consequence of false stale/live transitions. A disconnect event records the edge immediately but state age remains evaluable from the last accepted frame (or ready baseline) and may share the same freshness grace as silence, so a repaired channel does not flash lost/live unnecessarily.
 
 No browser timer proves real network freshness while a page is suspended. A hidden tab can defer both message tasks and stale timers. The lowest-latency workflow requires a browser/OS state that continues scheduling the application.
 

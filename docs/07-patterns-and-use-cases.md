@@ -212,6 +212,8 @@ A native companion can implement BRSP envelopes over its WebRTC/WebSocket librar
 
 If the native app exposes device sensors, send only necessary derived/normalized intent with explicit permission. Do not generalize motion/microphone/location access into a generic sensor pipe.
 
+For the inverse topology—a native desktop app whose bundled WebView is controlled by an external phone browser—use [13 — Native-shell WebView integration](13-native-shell-webview-integration.md). Keep the network session in bundled WebView code and cross into native authority only through typed, revalidated application IPC.
+
 ## 14. When to use remote desktop instead
 
 Use an established remote-desktop/streaming system when the requirement truly is:

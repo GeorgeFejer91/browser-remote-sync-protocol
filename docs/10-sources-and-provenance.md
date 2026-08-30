@@ -9,6 +9,7 @@ This ledger distinguishes normative standards, current service/SDK documentation
 | Artifact | Provenance | Treatment |
 | --- | --- | --- |
 | BRSP core, demo, tests, and documentation | Original repository work generalized from the public implementation lessons below | MIT, except named third-party files |
+| Application-integration starter and deterministic browser qualification fixture | Original repository work implementing the documented Marionette seam | MIT |
 | VDO.Ninja SDK 1.5.5 files under `vendor/vdoninja/1.5.5/` | Copied from the Affect Tracker pin, which identifies the upstream VDO.Ninja SDK distribution | Unmodified runtime files; MPL-2.0 retained; exact hashes checked |
 | VDO adapter concepts | Current VDO.Ninja SDK API plus behavior learned in Affect Tracker | Adapter code newly written for this repository |
 
@@ -30,6 +31,15 @@ Adopted facts and constraints:
 - SDK password/salt behavior and service requirements must be reviewed at the pinned version.
 
 The repository pins local SDK 1.5.5 for reproducibility. Current upstream documentation may describe newer behavior; updating the pin requires review, hash update, automated checks, and real route qualification.
+
+The deployment inventory in [14 — Deployment, network, and CSP](14-deployment-network-and-csp.md) was also verified against the readable pinned source. For the normal repository/Tauri origins, that source defaults to:
+
+- signaling at `wss://wss.vdo.ninja`;
+- a TURN-list request at `https://turnservers.vdo.ninja/`;
+- Google and Cloudflare STUN defaults;
+- runtime TURN URLs, with version-specific VDO/OBS fallback relay names.
+
+This is evidence about vendored `v1.5.5`, not a permanent service endpoint/SLA. STUN/TURN ICE traffic is not fully represented by page CSP `connect-src`, and the runtime TURN list may change independently.
 
 ### Data-only guide
 
@@ -71,6 +81,21 @@ This repository does not claim that BRSP HMAC encrypts transport payloads; WebRT
 | [Pointer Events](https://www.w3.org/TR/pointerevents/) | Unified phone touch/stylus/mouse events and pointer capture for companion controls |
 | [Screen Wake Lock](https://www.w3.org/TR/screen-wake-lock/) | Optional foreground usability aid; loss/denial is expected and not a background-reliability guarantee |
 | [Page Visibility Level 2](https://www.w3.org/TR/page-visibility-2/) | Visibility lifecycle signal; browser/OS scheduling may still throttle or suspend work |
+| [Mixed Content](https://www.w3.org/TR/mixed-content/) | Why an HTTPS companion must not rely on an insecure private-LAN HTTP/WS controller endpoint |
+| [Chrome Local Network Access](https://developer.chrome.com/blog/local-network-access?hl=en) | Current Chrome-origin/user-permission direction for public pages reaching local-network services; verify supported releases at deployment time |
+
+## Native-shell and Tauri sources
+
+The native-shell recipe uses Tauri v2 as the concrete example while keeping the BRSP boundary applicable to Electron and other WebViews:
+
+| Official Tauri source | Use in this repository |
+| --- | --- |
+| [Calling Rust from the frontend](https://v2.tauri.app/develop/calling-rust/) | Thin typed request/response boundary for native-authoritative application commands |
+| [Calling the frontend from Rust](https://v2.tauri.app/develop/calling-frontend/) | Small versioned native snapshots/events and lifecycle cleanup |
+| [Capabilities](https://v2.tauri.app/security/capabilities/) | Window/WebView labels, permission union, generated schemas, and constraining application commands through an app command manifest |
+| [Content Security Policy](https://v2.tauri.app/security/csp/) | Bundled WebView CSP, local IPC sources, and avoiding remote runtime scripts/content |
+
+Tauri documentation is version-sensitive. Adopters must inspect the generated schemas and official docs for the exact pinned Tauri/plugin version; the examples do not grant filesystem, shell, process, opener, or arbitrary HTTP authority.
 
 BRSP's canonical JSON definition is project-specific. The repository does not claim RFC 8785 conformance.
 
@@ -78,11 +103,10 @@ BRSP's canonical JSON definition is project-specific. The repository does not cl
 
 The transfer case study is the public Affect Tracker repository at commit [`4680ddf7d2e52cea325cd8cb0bff1868e53a5d33`](https://github.com/GeorgeFejer91/affect-tracker-web/tree/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33). Relevant durable documents include:
 
-- [VDO.Ninja integration contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/65-vdo-ninja-integration.md)
-- [VDO.Ninja qualification evidence](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/66-vdo-ninja-qualification.md)
-- [Party mode contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/67-party-mode.md)
-- [Ground Control contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/68-ground-control.md)
-- [Universe contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/69-universe-mode.md)
+- [Remote FLUBBER/VDO.Ninja integration contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/66-EXPERIMENTAL-REMOTE-FLUBBER.md)
+- [VDO.Ninja qualification evidence](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/67-REMOTE-FLUBBER-QUALIFICATION-2026-08-25.md)
+- [Settings beacon contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/68-EXPERIMENTAL-SETTINGS-BEACON.md)
+- [Ground Control Universe and Party contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/4680ddf7d2e52cea325cd8cb0bff1868e53a5d33/for-ai/69-EXPERIMENTAL-FLUBBER-COLLABORATION.md)
 
 Relevant implementation files:
 
@@ -110,6 +134,22 @@ The [problem/solution ledger](06-problems-and-solutions.md) explains these in de
 The source qualification document records attended measurements against its named commit/environment, including approximately 59.72 Hz direct and 58.48 Hz forced-TURN changing-coordinate receipts, zero-backlog behavior under injected pressure, and severe background scheduling gaps (including roughly 9.8–11.2 seconds for one hidden receiver stale transition and about 1056 ms p95 for one displaced sender-helper fixture).
 
 Those measurements motivated BRSP's scheduler, coalescing, route-readback, and “browser suspension defeats timer guarantees” guidance. They are not measurements of this repository's generic demo and must retain their source commit/environment label.
+
+## Affect Tracker desktop/browser Party extension
+
+The later public Affect Tracker commit [`9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb`](https://github.com/GeorgeFejer91/affect-tracker-web/tree/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb) is a second, narrower case study for desktop/native-shell reciprocity. Relevant artifacts include:
+
+- [Party mode contract](https://github.com/GeorgeFejer91/affect-tracker-web/blob/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb/for-ai/69-EXPERIMENTAL-FLUBBER-COLLABORATION.md);
+- [desktop Party frontend](https://github.com/GeorgeFejer91/affect-tracker-web/blob/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb/desktop/src/party.js);
+- [desktop Party pure core](https://github.com/GeorgeFejer91/affect-tracker-web/blob/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb/desktop/src/party-core.js);
+- [browser Party aggregation](https://github.com/GeorgeFejer91/affect-tracker-web/blob/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb/site/src/flubber-collaboration.js);
+- [Tauri CSP](https://github.com/GeorgeFejer91/affect-tracker-web/blob/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb/src-tauri/tauri.conf.json) and [settings-window capability](https://github.com/GeorgeFejer91/affect-tracker-web/blob/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb/src-tauri/capabilities/settings.json).
+
+The commit demonstrates both desktop-host/phone-guest and phone-host/desktop-guest Party topology. The host sends one bounded semantic roster/scene back through each existing duplex connection. The desktop uses returned host scene data for WebView presentation only; it cannot mutate Rust or LSL state. Phone pan/zoom remains local projection, so the claim is equal semantic scene fields—not pixel-identical rendering.
+
+Its security profile is intentionally different from BRSP: public experimental discovery, `password:false`, typed/bounded messages and peer binding, but no BRSP role-bound transcript proof or negotiated scopes. It is architecture/topology evidence, not secure generalized controller or BRSP conformance evidence.
+
+The project reported 217/217 tests and passing CI for that commit. No physical smartphone↔Tauri session was recorded, so native/phone runtime qualification remains open. The bounded claim is repeated in [15 — Current qualification record](15-qualification-record.md).
 
 ## Repository-authored design decisions
 
@@ -140,4 +180,4 @@ When extending this work:
 6. preserve third-party notices and exact modified/unmodified status;
 7. do not copy upstream prose/code beyond its license and attribution terms;
 8. update this ledger when a new adapter, protocol source, or inherited measurement materially affects the design.
-
+9. distinguish topology evidence from BRSP authentication/conformance and deterministic browser evidence from VDO, physical-device, or native-shell evidence.

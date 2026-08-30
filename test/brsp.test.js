@@ -10,6 +10,7 @@ import {
   decodeEnvelope,
   encodeEnvelope,
   isNewerSequence,
+  makeEnvelope,
   negotiateSession,
   verifyProofEnvelope,
 } from "../src/brsp.js";
@@ -20,9 +21,11 @@ class MockTransport extends EventTarget {
     this.other = undefined;
     this.peerKey = "peer-link";
     this.closed = false;
+    this.blockControl = false;
     this.blockState = false;
     this.sentControl = [];
     this.sentState = [];
+    this.dropControl = undefined;
   }
 
   connect(other) {
@@ -41,8 +44,9 @@ class MockTransport extends EventTarget {
   }
 
   sendControl(peerKey, data) {
-    if (this.closed || peerKey !== this.peerKey) return false;
+    if (this.closed || this.blockControl || peerKey !== this.peerKey) return false;
     this.sentControl.push(data);
+    if (this.dropControl?.(data)) return true;
     queueMicrotask(() => this.other.dispatch("controlmessage", { peerKey, data }));
     return true;
   }
@@ -91,6 +95,86 @@ test("canonical encoding is deterministic and rejects malformed envelopes", () =
   assert.deepEqual(decodeEnvelope(encoded), hello);
   assert.equal(decodeEnvelope("{}"), undefined);
   assert.equal(decodeEnvelope("x".repeat(BRSP_CONTROL_MAX_BYTES + 1)), undefined);
+  assert.throws(() => canonicalStringify(new Date()), /JSON-compatible/);
+  assert.throws(() => canonicalStringify(new Map()), /JSON-compatible/);
+  assert.throws(() => canonicalStringify(new (class Payload { constructor() { this.value = 1; } })()), /JSON-compatible/);
+  assert.throws(() => canonicalStringify(Object.defineProperty({}, "value", {
+    enumerable: true,
+    get() { return 1; },
+  })), /data property/);
+});
+
+test("canonical encoding accepts only dense plain arrays with own data entries", () => {
+  assert.equal(canonicalStringify([1, [true, null], "value"]), '[1,[true,null],"value"]');
+
+  const sparse = new Array(1);
+  assert.throws(() => canonicalStringify(sparse), /dense array/);
+
+  let getterCalled = false;
+  const accessor = [];
+  Object.defineProperty(accessor, "0", {
+    enumerable: true,
+    get() {
+      getterCalled = true;
+      return "unsafe";
+    },
+  });
+  assert.throws(() => canonicalStringify(accessor), /data property/);
+  assert.equal(getterCalled, false, "array accessors are rejected without being invoked");
+
+  class CustomArray extends Array {}
+  assert.throws(() => canonicalStringify(new CustomArray(1, 2)), /plain array/);
+
+  const extraProperty = [1];
+  extraProperty.label = "not-json-array-data";
+  assert.throws(() => canonicalStringify(extraProperty), /extra array properties/);
+
+  const symbolProperty = [1];
+  symbolProperty[Symbol("metadata")] = true;
+  assert.throws(() => canonicalStringify(symbolProperty), /extra array properties/);
+
+  let capabilityGetterCalled = false;
+  const accessorCapabilities = [];
+  Object.defineProperty(accessorCapabilities, "0", {
+    enumerable: true,
+    get() {
+      capabilityGetterCalled = true;
+      return "state";
+    },
+  });
+  assert.throws(() => createHelloEnvelope({
+    role: "target",
+    sessionId: "session_accessor_array",
+    senderId: "target_accessor_array",
+    senderEpoch: 1,
+    capabilities: accessorCapabilities,
+  }), /data property/);
+  assert.equal(capabilityGetterCalled, false, "typed envelope construction also rejects array accessors without invoking them");
+});
+
+test("peer-open control failure enters protocol error without leaking the attach rejection", async () => {
+  const transport = new MockTransport();
+  transport.blockControl = true;
+  const connection = new BRSPConnection({
+    transport,
+    role: "target",
+    sessionId: "session_start_failure",
+    sharedSecret: "startup-failure-secret-with-entropy",
+    peerId: "target_start_failure",
+  });
+  const phaseChange = eventOnce(connection, "phasechange");
+  const protocolError = eventOnce(connection, "protocolerror");
+
+  transport.open();
+
+  const [phaseDetail, errorDetail] = await Promise.all([phaseChange, protocolError]);
+  assert.equal(connection.phase, "error");
+  assert.equal(phaseDetail.phase, "error");
+  assert.equal(errorDetail.phase, "error");
+  assert.match(errorDetail.message, /control lane is unavailable or backpressured/i);
+  assert.equal(transport.closed, true, "startup protocol errors close the selected peer");
+  await settle();
+  await connection.close();
 });
 
 test("unsigned half-range sequence ordering handles wraparound", () => {
@@ -207,6 +291,116 @@ test("controller and target authenticate, exchange a snapshot, apply a command, 
   assert.equal(remoteState.state.x, 0.75);
   assert.equal(controller.pendingCommands.size, 0);
 
+  await Promise.all([target.close(), controller.close()]);
+});
+
+test("a duplicate command is applied once and receives a fresh acknowledgement sequence", async () => {
+  const targetTransport = new MockTransport();
+  const controllerTransport = new MockTransport();
+  targetTransport.connect(controllerTransport);
+  let revision = 0;
+  let applyCount = 0;
+  let droppedFirstApplied = false;
+  targetTransport.dropControl = (data) => {
+    if (decodeEnvelope(data)?.type !== "applied" || droppedFirstApplied) return false;
+    droppedFirstApplied = true;
+    return true;
+  };
+  const target = new BRSPConnection({
+    transport: targetTransport,
+    role: "target",
+    sessionId: "session_command_retry",
+    sharedSecret: "command-retry-secret-with-entropy",
+    peerId: "target_command_retry",
+    grantedScopes: ["scene.write"],
+    getState: () => ({ revision }),
+    applyCommand: () => {
+      applyCount += 1;
+      revision += 1;
+      return { ok: true, revision, result: { applied: true } };
+    },
+  });
+  const controller = new BRSPConnection({
+    transport: controllerTransport,
+    role: "controller",
+    sessionId: "session_command_retry",
+    sharedSecret: "command-retry-secret-with-entropy",
+    peerId: "controller_command_retry",
+    requestedScopes: ["scene.write"],
+  });
+  const ready = Promise.all([eventOnce(target, "ready"), eventOnce(controller, "ready")]);
+  targetTransport.open();
+  controllerTransport.open();
+  await ready;
+
+  const commandId = controller.sendCommand("scene.write", "apply-once", {});
+  await settle();
+  assert.equal(applyCount, 1);
+  assert.equal(controller.pendingCommands.has(commandId), true, "the dropped acknowledgement remains pending");
+  const original = controllerTransport.sentControl
+    .map((data) => decodeEnvelope(data))
+    .find((envelope) => envelope?.type === "command" && envelope.body.commandId === commandId);
+  assert.ok(original);
+  const applied = eventOnce(controller, "commandapplied");
+  controllerTransport.sendControl(controllerTransport.peerKey, encodeEnvelope(makeEnvelope({
+    type: "command",
+    sessionId: original.sessionId,
+    senderId: original.senderId,
+    senderEpoch: original.senderEpoch,
+    sequence: (original.sequence + 1) >>> 0,
+    body: original.body,
+  })));
+  assert.equal((await applied).commandId, commandId);
+  assert.equal(applyCount, 1, "the target reducer is not run twice");
+  assert.equal(controller.pendingCommands.has(commandId), false);
+  const acknowledgements = targetTransport.sentControl
+    .map((data) => decodeEnvelope(data))
+    .filter((envelope) => envelope?.type === "applied" && envelope.body.commandId === commandId);
+  assert.equal(acknowledgements.length, 2);
+  assert.notEqual(acknowledgements[0].sequence, acknowledgements[1].sequence);
+  const protocolError = eventOnce(target, "protocolerror");
+  controllerTransport.sendControl(controllerTransport.peerKey, encodeEnvelope(makeEnvelope({
+    type: "command",
+    sessionId: original.sessionId,
+    senderId: original.senderId,
+    senderEpoch: original.senderEpoch,
+    sequence: (original.sequence + 2) >>> 0,
+    body: { ...original.body, action: "different-action" },
+  })));
+  assert.match((await protocolError).message, /commandId was reused/i);
+  await Promise.all([target.close(), controller.close()]);
+});
+
+test("controller freshness expires after readiness and remains stale after peer close", async () => {
+  const targetTransport = new MockTransport();
+  const controllerTransport = new MockTransport();
+  targetTransport.connect(controllerTransport);
+  let clock = 100;
+  const target = new BRSPConnection({
+    transport: targetTransport,
+    role: "target",
+    sessionId: "session_freshness",
+    sharedSecret: "freshness-secret-with-enough-entropy",
+    peerId: "target_freshness",
+    now: () => clock,
+  });
+  const controller = new BRSPConnection({
+    transport: controllerTransport,
+    role: "controller",
+    sessionId: "session_freshness",
+    sharedSecret: "freshness-secret-with-enough-entropy",
+    peerId: "controller_freshness",
+    now: () => clock,
+  });
+  const ready = Promise.all([eventOnce(target, "ready"), eventOnce(controller, "ready")]);
+  targetTransport.open();
+  controllerTransport.open();
+  await ready;
+  assert.equal(controller.isStateStale(clock + 1_999), false);
+  assert.equal(controller.isStateStale(clock + 2_000), true, "no first state expires from the ready boundary");
+  controllerTransport.dispatch("peerclose", { peerKey: controllerTransport.peerKey });
+  assert.equal(controller.phase, "disconnected");
+  assert.equal(controller.isStateStale(clock + 2_001), true, "disconnect does not make held state fresh again");
   await Promise.all([target.close(), controller.close()]);
 });
 
