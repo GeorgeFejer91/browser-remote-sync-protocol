@@ -10,7 +10,7 @@ const PAGE_FILES = [
   "icon.svg",
   "manifest.webmanifest",
   "sw.js",
-  "src/app-fixed-v1.js",
+  "src/app-fixed-v2.js",
   "src/beacon-fixed-v1.js",
   "src/controller.js",
   "src/profile.js",

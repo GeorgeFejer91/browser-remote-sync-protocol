@@ -1,5 +1,5 @@
 const STATIC_CACHE_PREFIX = "polar-remote-pages-static-";
-const STATIC_CACHE = `${STATIC_CACHE_PREFIX}v5`;
+const STATIC_CACHE = `${STATIC_CACHE_PREFIX}v6`;
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   "./icon.svg",
   "./src/styles.css",
   "./src/styles-v3.css",
-  "./src/app-fixed-v1.js",
+  "./src/app-fixed-v2.js",
   "./src/beacon-fixed-v1.js",
   "./src/controller.js",
   "./src/profile.js",

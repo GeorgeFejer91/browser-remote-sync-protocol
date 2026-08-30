@@ -45,7 +45,7 @@ const required = [
   "polar-remote-quest/index.html",
   "polar-remote-quest/manifest.webmanifest",
   "polar-remote-quest/sw.js",
-  "polar-remote-quest/src/app-fixed-v1.js",
+  "polar-remote-quest/src/app-fixed-v2.js",
   "polar-remote-quest/src/beacon-fixed-v1.js",
   "polar-remote-quest/src/controller.js",
   "polar-remote-quest/src/profile.js",

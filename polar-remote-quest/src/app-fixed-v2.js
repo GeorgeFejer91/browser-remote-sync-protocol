@@ -3,6 +3,12 @@ import { COMMANDS } from "./profile.js";
 import { deriveBeaconInvitation, PILOT_BEACON_ID } from "./beacon-fixed-v1.js";
 import { drawEcgPreview } from "./waveform.js";
 
+function isTopLevelWindow() {
+  try { return globalThis.top === globalThis.self; } catch { return false; }
+}
+
+const embeddedBlocked = !isTopLevelWindow();
+
 const requestButton = document.querySelector("#request-control");
 const stopButton = document.querySelector("#stop");
 const connectionStatus = document.querySelector("#connection-status");
@@ -35,7 +41,7 @@ function render(snapshot = controller.snapshot()) {
     : "Not measured";
   freshness.textContent = snapshot.stale ? "Stale — holding last confirmed state" : (ready ? "Current" : "No target state");
   targetState.textContent = JSON.stringify({ revision: snapshot.revision, ...snapshot.state }, null, 2);
-  requestButton.disabled = requestInFlight || Boolean(controller.session);
+  requestButton.disabled = embeddedBlocked || requestInFlight || Boolean(controller.session);
   stopButton.disabled = !controller.session;
   commandButtons.forEach(({ command, button }) => {
     button.disabled = !controller.canSend(command);
@@ -104,7 +110,7 @@ controller.addEventListener("error", (event) => {
 });
 
 requestButton.addEventListener("click", async () => {
-  if (requestInFlight || controller.session) return;
+  if (embeddedBlocked || requestInFlight || controller.session) return;
   requestInFlight = true;
   connectionStatus.textContent = "Requesting every remotely eligible app scope. Put on the headset and choose Accept or Reject.";
   render();
@@ -137,3 +143,7 @@ if ("serviceWorker" in navigator) {
     .catch(() => {});
 }
 render();
+if (embeddedBlocked) {
+  connectionStatus.textContent = "Blocked: open this controller as a top-level page, not inside another website.";
+  commandStatus.textContent = "Embedded control is disabled to prevent clickjacking.";
+}

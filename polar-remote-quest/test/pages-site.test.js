@@ -116,7 +116,7 @@ test("ECG preview requires its negotiated scope and survives reliable projection
 test("GitHub Pages source keeps activation, approval, privacy, and path boundaries", async () => {
   const [html, app, beacon, worker, workflow, styles, versionedStyles] = await Promise.all([
     readFile(join(root, "polar-remote-quest/index.html"), "utf8"),
-    readFile(join(root, "polar-remote-quest/src/app-fixed-v1.js"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/app-fixed-v2.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/beacon-fixed-v1.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/sw.js"), "utf8"),
     readFile(join(root, ".github/workflows/pages.yml"), "utf8"),
@@ -136,6 +136,10 @@ test("GitHub Pages source keeps activation, approval, privacy, and path boundari
   assert.match(html, /src="\.\.\/vendor\/vdoninja\/1\.5\.5\/vdoninja-sdk\.min\.js"/u);
 
   assert.doesNotMatch(app, /localStorage|beaconForm|rememberBeacon|findButton/u);
+  assert.match(app, /globalThis\.top === globalThis\.self/u);
+  assert.match(app, /embeddedBlocked \|\| requestInFlight/u);
+  assert.match(app, /if \(embeddedBlocked \|\| requestInFlight \|\| controller\.session\) return/u);
+  assert.match(app, /Embedded control is disabled to prevent clickjacking/u);
   assert.match(app, /requestButton\.addEventListener\("click", async \(\) => \{[\s\S]*deriveBeaconInvitation\(PILOT_BEACON_ID\)[\s\S]*await controller\.connect\(invitation\)/u);
   assert.match(app, /preview\?\.values/u, "the display must consume the native values field");
   assert.doesNotMatch(app, /ecgPreview\?\.samples/u);
@@ -168,7 +172,7 @@ test("Pages builder emits a coherent subpage without altering pinned source byte
     ".nojekyll",
     "index.html",
     "polar-remote-quest/index.html",
-    "polar-remote-quest/src/app-fixed-v1.js",
+    "polar-remote-quest/src/app-fixed-v2.js",
     "polar-remote-quest/src/beacon-fixed-v1.js",
     "polar-remote-quest/src/controller.js",
     "polar-remote-quest/src/styles-v3.css",
