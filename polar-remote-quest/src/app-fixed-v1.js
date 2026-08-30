@@ -1,6 +1,6 @@
 import { PolarRemoteController } from "./controller.js";
 import { COMMANDS } from "./profile.js";
-import { deriveBeaconInvitation, PILOT_BEACON_ID } from "./beacon.js";
+import { deriveBeaconInvitation, PILOT_BEACON_ID } from "./beacon-fixed-v1.js";
 import { drawEcgPreview } from "./waveform.js";
 
 const requestButton = document.querySelector("#request-control");

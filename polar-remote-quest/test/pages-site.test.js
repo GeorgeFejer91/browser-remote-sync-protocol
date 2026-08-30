@@ -16,7 +16,7 @@ import {
   normalizeBeaconId,
   PILOT_BEACON_ID,
   storeRememberedBeacon,
-} from "../src/beacon.js";
+} from "../src/beacon-fixed-v1.js";
 import { PolarRemoteController } from "../src/controller.js";
 import {
   CAPABILITY_MANIFEST,
@@ -116,8 +116,8 @@ test("ECG preview requires its negotiated scope and survives reliable projection
 test("GitHub Pages source keeps activation, approval, privacy, and path boundaries", async () => {
   const [html, app, beacon, worker, workflow, styles, versionedStyles] = await Promise.all([
     readFile(join(root, "polar-remote-quest/index.html"), "utf8"),
-    readFile(join(root, "polar-remote-quest/src/app.js"), "utf8"),
-    readFile(join(root, "polar-remote-quest/src/beacon.js"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/app-fixed-v1.js"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/beacon-fixed-v1.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/sw.js"), "utf8"),
     readFile(join(root, ".github/workflows/pages.yml"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/styles.css"), "utf8"),
@@ -168,8 +168,8 @@ test("Pages builder emits a coherent subpage without altering pinned source byte
     ".nojekyll",
     "index.html",
     "polar-remote-quest/index.html",
-    "polar-remote-quest/src/app.js",
-    "polar-remote-quest/src/beacon.js",
+    "polar-remote-quest/src/app-fixed-v1.js",
+    "polar-remote-quest/src/beacon-fixed-v1.js",
     "polar-remote-quest/src/controller.js",
     "polar-remote-quest/src/styles-v3.css",
     "polar-remote-quest/src/waveform.js",
