@@ -17,6 +17,42 @@ This is a pre-1.0 reference implementation. Its protocol and code have automated
 - Decide whether direct peer IP exposure is acceptable. Use a qualified private TURN service or another architecture when it is not.
 - Add authorization, audit records, revocation, expiry, and origin policy appropriate to the application. BRSP's pairing proof is session authentication, not an account system.
 
+## Native Meta Quest targets
+
+For a native Quest application, keep the immersive Activity and typed native
+reducer authoritative. Permission approval, pairing Enable/Accept, application
+launch, Guardian/Meta UI, and any kiosk arm remain headset-only. An external
+browser must never select an Android component, intent, URL, file, input event,
+or native method.
+
+If a bundled WebView hosts the VDO.Ninja adapter, treat it as a lower-trust
+transport boundary. Load only packaged pinned assets, block navigation, disable
+unneeded file/content/storage access, expose only generation-bound bounded
+lane/peer/payload operations, and validate complete BRSP/1 again in Kotlin.
+Use independent VDO transport and BRSP pairing secrets so the WebView cannot
+complete a new BRSP proof from transport material alone.
+
+That separation is not post-authentication containment. After a legitimate
+session reaches `ready`, compromised WebView JavaScript can forge typed frames
+within already granted scopes unless the app uses native WebRTC/channel
+ownership or a reviewed per-frame MAC extension. Keep grants narrow and short,
+make local Stop immediately revoke native authority, and state this residual
+risk explicitly.
+
+The hosted Polar Remote Quest companion is a deliberately named
+**public-beacon/local-approval profile**, not the default secret-invitation
+profile above. Its stable 96-bit Beacon ID deterministically derives discovery
+and transcript-binding values, so anyone who knows that public ID can form a
+valid controller request. The proof binds the request to the Beacon ID and
+transcript; it does not authenticate a person. The Quest must show the exact
+requested scopes and withhold proof, ready, commands, and sensitive state until
+the wearer presses Accept for that request. Do not transplant this profile into
+a production identity boundary without an account-backed one-time invitation,
+reviewed PAKE, or equivalent authenticated bootstrap.
+
+See [the native Meta Quest integration guide](docs/16-native-meta-quest-integration.md)
+for the complete boundary and qualification matrix.
+
 ## Reporting a vulnerability
 
 Please open a GitHub security advisory for the repository rather than publishing an exploitable report as a normal issue. Include the affected commit, browser and operating system, a minimal reproduction, impact, and whether the problem occurs in the transport-neutral protocol, VDO.Ninja adapter, or demonstration app.

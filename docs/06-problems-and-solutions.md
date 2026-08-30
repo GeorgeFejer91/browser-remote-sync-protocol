@@ -281,6 +281,139 @@ BRSP further separates general control and state channels to reduce multiplexing
 
 **Transfer rule.** Qualification is a ledger of bounded claims, not a single “tested” badge.
 
+## 34. A transport WebView became native authority
+
+**Problem.** Reusing browser WebRTC code inside an APK can tempt the app to
+expose a generic JavaScript/native dispatcher. A compromised frame would then
+inherit Android, sensor, file, and Spatial authority.
+
+**Solution.** Load only packaged pinned assets and expose fixed bounded
+generation/lane/peer/payload operations. Give the WebView only the VDO
+transport secret. Kotlin independently performs BRSP proof, scopes, revision,
+dedupe, action decoding, and native dispatch.
+
+**Transfer rule.** A bridge carries bytes; it does not make transport code an
+application authority. The remaining post-`ready` WebView risk must still be
+documented.
+
+## 35. A QR invitation selected the controller epoch
+
+**Problem.** A target-authored QR that includes the controller epoch or nonce
+makes the target choose part of the controller's replay namespace and creates
+stale-session ambiguity on reconnect.
+
+**Solution.** The native Quest fragment has exactly room, BRSP session,
+transport secret, and pairing secret. Each endpoint creates its own fresh
+sender ID, epoch, and nonce locally; the proof binds the final hellos.
+
+**Transfer rule.** Invitations deliver session material, not the other
+endpoint's freshness identity.
+
+## 36. One bearer crossed both native and transport trust boundaries
+
+**Problem.** Using the same secret for VDO signaling and Kotlin BRSP proof lets
+the bundled transport surface learn the application proof key.
+
+**Solution.** Generate independent 256-bit `transportSecret` and
+`pairingSecret` values. The target WebView receives only the former; Kotlin
+receives only the latter. The phone receives both through the expiring
+four-field invitation.
+
+**Transfer rule.** Separate discovery/transport possession from application
+authorization whenever components have different trust.
+
+## 37. A foreground service was mistaken for immortal XR authority
+
+**Problem.** A notification-bearing service can remain visible while the
+Spatial Activity pauses, but that does not prove the scene, WebView, renderer,
+or application reducer survives Activity destruction or process death.
+
+**Solution.** Define an explicit lifecycle matrix using Android plus VR/OpenXR
+readiness/focus. Permit only observation and idempotent safe stop/revoke while
+the target is non-interactive; reject other mutations without queuing. Revoke
+on `onSpatialShutdown`/destroy. Use a foreground service only when it owns work
+that genuinely matches the declared type; otherwise keep Stop in the Activity
+and/or an ordinary notification. Any service stays non-exported, locally
+started, non-sticky, and unable to cold-launch the app.
+
+**Transfer rule.** State the actual lifecycle owner. A platform execution aid
+does not expand application authority or qualification.
+
+## 38. An installed APK was described as end-to-end remote control
+
+**Problem.** Build, APK inspection, install, process, or resumed-Activity
+readback can all pass without a browser proving BRSP, a command applying, a
+visible Spatial effect, a selected WebRTC route, or a real sensor sample.
+
+**Solution.** Keep host, browser, transport, Quest, phone, sensor, route, and
+latency evidence as separate immutable rows. Require command ID, applied
+revision, sanitized returned state, target marker, and visible effect for the
+end-to-end action claim.
+
+**Transfer rule.** Claim the lowest evidence tier that directly exercised the
+fact. The complete native matrix is in
+[16 — Native Meta Quest target](16-native-meta-quest-integration.md).
+
+## 39. The reducer committed before the hardware effect succeeded
+
+**Problem.** A syntactically valid `start-ecg` or device command can still fail
+because permission, Bluetooth, connection, or SDK preconditions changed. If the
+reducer increments revision first, the target acknowledges state that never
+became real.
+
+**Solution.** Validate product guards, request the bounded native effect, and
+commit the semantic reducer result only after the effect is accepted. Return
+`action_unavailable` with unchanged state on failure. Reduce from the latest
+authoritative observation because an SDK callback may update it synchronously.
+
+**Transfer rule.** Transport acceptance and argument validity precede—but do
+not prove—native effect acceptance.
+
+## 40. Local approval delayed a normative hello
+
+**Problem.** Holding the target `hello` until the wearer accepts feels safer,
+but BRSP/1 requires both endpoints to emit `hello` immediately after both lanes
+open. Waiting also tempts the target to build `grantedScopes` from a controller
+request that it was supposed to advertise independently.
+
+**Solution.** Before opening transport, freeze the headset's locally grantable
+scope set, including any sensitive-scope toggle. Both peers then send their own
+hello immediately. The target displays the computed requested/granted
+intersection and withholds its proof, `ready`, state, and application authority
+until local Accept. Rejecting or changing the grant closes that handshake and
+requires a new invitation; the target hello never changes in place.
+
+**Transfer rule.** Delay authority, not the protocol's first message.
+
+## 41. Pairing material was cleared but reconnect was still promised
+
+**Problem.** A replacement BRSP connection needs fresh hellos and proofs. A
+target that clears its pairing key at `ready` cannot later authenticate that
+replacement merely because VDO reports the same room, stream, or peer label.
+
+**Solution.** Choose and publish one lifecycle. The conservative Quest pilot
+ends native authority on accepted peer loss, clears session state, and requires
+a new headset Enable and invitation. A product that supports authenticated
+resumption must retain or rotate suitable proof material, bind the replacement
+connection, generate fresh epochs/nonces, repeat the complete handshake, and
+qualify the added secret lifetime and dedupe window.
+
+**Transfer rule.** Transport rediscovery is not authenticated resumption.
+
+## 42. A byte-bounded JSON document still exhausted the parser stack
+
+**Problem.** Thousands of nested empty arrays can fit below an 8 or 16 KiB lane
+limit and overflow a recursive JSON tree builder before the post-parse depth
+validator runs.
+
+**Solution.** Run a string-aware depth preflight that ignores brackets inside
+escaped JSON strings, rejects imbalance, and caps nesting before tree parsing.
+Then apply the full parsed-value limits again. Keep a regression fixture near
+the maximum lane size.
+
+**Transfer rule.** Byte limits and semantic depth limits defend different
+resources; enforce both before application dispatch.
+
 ## Consolidated checklist
 
 Before transferring BRSP principles to another app, answer:

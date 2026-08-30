@@ -88,6 +88,12 @@ Use the VDO.Ninja adapter when:
 
 VDO.Ninja is not automatically the most efficient operational choice when your product already has authenticated accounts, a WebSocket service, centralized authorization, audit requirements, or many concurrent viewers. In that environment, BRSP over the existing backend can eliminate separate peer discovery and make fan-out and revocation simpler.
 
+The target does not have to be a browser. A native Meta Quest application can
+implement the BRSP target in pure Kotlin and use either native WebRTC or a
+strictly transport-only packaged WebView for the VDO.Ninja adapter. The
+immersive app remains authoritative and receives only typed application
+actions. See [16 — Native Meta Quest target and browser companion](16-native-meta-quest-integration.md).
+
 ## Data-size intuition
 
 The comparison below is qualitative; exact network overhead depends on browser, path, encryption, packetization, and content.
@@ -126,4 +132,4 @@ The protocol also cannot make a hidden or suspended browser real-time. Browser t
 
 ## Next
 
-Read [01 — Architecture and authority](01-architecture.md) before implementing an adapter. The most expensive synchronization bugs usually come from unclear ownership and feedback loops, not from the WebRTC API itself.
+Read [01 — Architecture and authority](01-architecture.md) before implementing an adapter. The most expensive synchronization bugs usually come from unclear ownership and feedback loops, not from the WebRTC API itself. Native Quest adopters should then read [16](16-native-meta-quest-integration.md).

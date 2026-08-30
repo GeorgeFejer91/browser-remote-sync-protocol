@@ -365,3 +365,15 @@ Pass automated codec/state-machine/adapter tests first. Then use two fresh brows
 Do not relabel a same-PC result as physical phone/Quest evidence, a force-relay flag as relay evidence, synthetic input as physical sensor evidence, or an old commit's result as current-build evidence.
 
 The full matrix is in [08 — Testing and qualification](08-testing-and-qualification.md), and the current bounded evidence/open gates are in [15 — Qualification record](15-qualification-record.md).
+
+## Native Meta Quest variant
+
+For an immersive Quest target, keep Steps 1–17 but place BRSP proof, scopes,
+revisions, and dispatch in pure Kotlin. A packaged WebView may carry only the
+pinned VDO byte transport. Pair with separate transport/proof secrets, require
+headset-local scope approval, compute interactivity from Android plus
+VR/OpenXR readiness/focus, reject unsafe mutations while that combined guard is
+false, and revoke on Spatial shutdown. The complete module layout,
+four-field QR, Kotlin snippets, Android 14 foreground-service boundary, and
+physical qualification matrix are in
+[16 — Native Meta Quest target and browser companion](16-native-meta-quest-integration.md).

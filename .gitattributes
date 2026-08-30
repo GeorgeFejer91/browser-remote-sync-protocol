@@ -1,0 +1,8 @@
+# Keep repository-authored text deterministic across Windows and Unix clones.
+* text=auto eol=lf
+
+# Third-party distribution artifacts are byte-pinned. Git must not rewrite
+# their line endings on Windows checkouts.
+/vendor/vdoninja/1.5.5/vdoninja-sdk.js -text
+/vendor/vdoninja/1.5.5/vdoninja-sdk.min.js -text
+/vendor/vdoninja/1.5.5/LICENSE-MPL-2.0.txt -text

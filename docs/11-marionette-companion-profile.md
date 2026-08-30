@@ -69,6 +69,25 @@ https://target.example/companion/#room=<id>&secret=<bearer-secret>
 
 This remains a bearer secret. It can leak through screenshots, copied chat, browser history, extensions, backups, or shoulder surfing. Parse it only after origin verification, remove it from the visible address/history where feasible, keep it in memory, require Connect, expire it, and never put it in a query parameter. For higher assurance, use a one-time opaque invitation resolved through an authenticated backend instead of embedding the long secret.
 
+For a native Quest target whose VDO adapter runs in a lower-trust packaged
+WebView, use independent VDO and BRSP secrets. The invitation fragment then has
+exactly four values:
+
+```text
+#room=<vdo-room>&session=<brsp-session>&transportSecret=<vdo-password>&pairingSecret=<brsp-proof-key>
+```
+
+The target WebView receives only `room` and `transportSecret`; the Kotlin BRSP
+core receives only `session` and `pairingSecret`; the controller needs all four.
+The QR must not contain a controller epoch, nonce, sender ID, requested scope,
+or action. The controller generates its freshness identity locally. See
+[16 — Native Meta Quest target](16-native-meta-quest-integration.md).
+The target still emits its BRSP hello immediately after lane opening; local
+approval withholds target proof/ready and application authority, not the hello.
+Its locally grantable set is fixed before the lanes open. The headset displays
+the independently computed request/grant intersection; narrowing that set at
+approval time closes the handshake and requires a new invitation.
+
 ### Production flow
 
 Prefer:
@@ -127,6 +146,13 @@ The phone should not guess which controls exist. The target's reliable snapshot 
 ```
 
 The manifest is descriptive data, not executable UI code. The companion supports a fixed allow-list of control kinds and validates every field. Unknown kinds are ignored and displayed as unsupported. Labels are rendered as text, never HTML.
+
+A closed native profile SHOULD also publish a canonical SHA-256 hash of the
+complete manifest in sanitized state. The companion requests the full manifest
+reliably after `ready`, compares both exact canonical content and expected hash,
+and keeps mutation controls disabled until the current session matches. Status
+and capability requests may remain available so version skew is diagnosable.
+Reset manifest confirmation on Stop, peer replacement, or reconnect.
 
 Recommended version-1 kinds:
 

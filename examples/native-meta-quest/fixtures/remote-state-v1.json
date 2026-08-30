@@ -1,0 +1,11 @@
+{
+  "revision": 7,
+  "targetInteraction": "interactive",
+  "interactionMode": "pointer",
+  "panelVisible": true,
+  "panelAnchorRevision": 2,
+  "appPhase": "ready",
+  "connectionRoute": "direct",
+  "rttMs": 18,
+  "capabilityHash": "a6baeaa8727b13c316f733909fb30297183308ec3fe4eda3ef0c8a9c0376cc20"
+}

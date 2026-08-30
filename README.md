@@ -17,6 +17,8 @@ The first adapter uses VDO.Ninja's **data-only WebRTC path**. No camera or micro
 - A copyable [application-integration starter](examples/application-integration/README.md) with exact reducers, smartphone intent, a target-enforced dead-man lease, explicit lifecycle, and deterministic tests.
 - A dedicated [Marionette smartphone companion profile](docs/11-marionette-companion-profile.md) for fast touch controls, target leases, QR pairing, phone lifecycle, accessibility, and local-only pan/pinch perspective.
 - Last-mile recipes for a [browser target plus phone](docs/12-app-integration-recipes.md), a [native-shell WebView plus external browser](docs/13-native-shell-webview-integration.md), and [deployment/network/CSP](docs/14-deployment-network-and-csp.md).
+- A comprehensive [native Meta Quest target guide](docs/16-native-meta-quest-integration.md) and [copyable integration fragments](examples/native-meta-quest/README.md) with Kotlin authority, a transport-only packaged WebView, one-time or explicitly local-approved public-beacon discovery, Android/Spatial lifecycle rules, APK inspection, and evidence boundaries.
+- The installable [Polar Remote Quest phone/laptop companion](https://georgefejer91.github.io/browser-remote-sync-protocol/polar-remote-quest/) with a persistent public Beacon ID, headset Accept/Reject, typed controls, and a separately scoped bounded ECG activity preview.
 - A tiered [qualification record](docs/15-qualification-record.md) that separates deterministic browser evidence, VDO route evidence, physical-device evidence, and native-shell evidence.
 - A detailed [problem/solution ledger](docs/06-problems-and-solutions.md) extracted from building and physically qualifying Affect Tracker's remote Flubber, Universe, settings beacon, and Party modes.
 - Architecture, privacy, implementation, testing, transfer patterns, source provenance, and a production roadmap.
@@ -82,6 +84,7 @@ Then choose the matching guide:
 
 - [browser target and smartphone companion](docs/12-app-integration-recipes.md);
 - [Tauri/native-shell WebView and external browser](docs/13-native-shell-webview-integration.md);
+- [native Meta Quest APK and browser companion](docs/16-native-meta-quest-integration.md);
 - [static hosting, exact pinned VDO network inventory, LAN caveats, and CSP](docs/14-deployment-network-and-csp.md).
 
 A desktop WebView and phone on the same Wi-Fi can negotiate a direct WebRTC route, but the supplied VDO adapter still needs Internet signaling and external ICE infrastructure. It is not offline LAN discovery. An offline deployment needs owned authenticated signaling/raw WebRTC or an authenticated local WebSocket adapter.
@@ -128,10 +131,16 @@ Read in order for the full transfer guide:
 14. [Native-shell WebView and external browser](docs/13-native-shell-webview-integration.md)
 15. [Deployment, network inventory, and CSP](docs/14-deployment-network-and-csp.md)
 16. [Qualification tiers and current record](docs/15-qualification-record.md)
+17. [Native Meta Quest target and browser companion](docs/16-native-meta-quest-integration.md)
 
 ## Status and provenance
 
 BRSP/1 is a pre-1.0 reference protocol. Automated tests cover encoding, bounds, unsigned sequencing, mutual proof, scope negotiation, command acknowledgement and dedupe, authoritative state/freshness, negotiated smartphone live intent, exact application validation, target leases, explicit selection, VDO data-only activation, delivery modes, newest-only backpressure, and teardown. A deterministic [browser smoke fixture](qualification/README.md) exercises the real ES modules and Web Crypto without contacting signaling. The [current qualification record](docs/15-qualification-record.md) states the higher network, physical-device, and native-shell gates that remain open. The security limitations in [SECURITY.md](SECURITY.md) apply.
+
+The native Quest chapter records a reusable architecture and host-built pilot
+boundary. It does not by itself claim a physical Quest/browser command, a
+worn-H10 ECG run, a selected WebRTC route, offline LAN behavior, or a latency
+target. Those require separately named immutable evidence.
 
 The design is derived from the public Affect Tracker implementation and its attended VDO.Ninja qualification evidence, then generalized into a transport-neutral protocol. The newer desktop/browser Party case study at [`9e45c4c`](https://github.com/GeorgeFejer91/affect-tracker-web/tree/9e45c4cdc987a91a8cdb00ec3b52cc335ebcf8cb) demonstrates reciprocal desktop/phone host/guest topology and presentation-only desktop return; it remains an experimental public/passwordless architecture case study rather than BRSP authentication evidence. Exact source versions, standards, measured findings, security deltas, and code-reuse status are recorded in [the source ledger](docs/10-sources-and-provenance.md).
 

@@ -13,6 +13,25 @@ A BRSP deployment has six logically separate components even when several live i
 
 Keeping these components separate makes the protocol portable and prevents UI details from becoming wire behavior by accident.
 
+## Native target projection
+
+For a native Android/Meta Quest target, the six logical components remain but
+their placement changes. A pure Kotlin BRSP session validates the application
+contract and calls one native reducer. A packaged WebView may own only the VDO
+signaling and RTCDataChannel byte path. It must not own proof secrets, grants,
+Android permissions, Spatial entities, Polar/device operations, or a generic
+native dispatcher.
+
+```text
+browser controller -> WebRTC bytes -> transport WebView -> Kotlin BRSP
+                   -> typed dispatcher -> native effect/reducer -> state
+```
+
+Every asynchronous transport event is fenced by the current generation, and
+every local/remote action enters the same application dispatcher. The complete
+placement, pairing, lifecycle, and APK contract is in
+[16 — Native Meta Quest target and browser companion](16-native-meta-quest-integration.md).
+
 ## Reference one-controller/one-target topology
 
 The target is the announcing peer. The controller is the viewing peer. This is a connection-establishment distinction, not a one-way transport: the created RTC data channels are duplex.
@@ -183,4 +202,4 @@ An adapter must document how it satisfies those semantics. A WebSocket adapter, 
 
 ## Next
 
-Read [02 — Threat model and privacy](02-threat-model-and-privacy.md). A functional peer connection is not evidence that the peer is authorized or that deployment privacy is acceptable.
+Read [02 — Threat model and privacy](02-threat-model-and-privacy.md). A functional peer connection is not evidence that the peer is authorized or that deployment privacy is acceptable. Native Quest targets also require the platform boundary in [16](16-native-meta-quest-integration.md).

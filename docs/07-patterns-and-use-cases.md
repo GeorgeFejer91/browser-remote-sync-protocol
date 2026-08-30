@@ -214,6 +214,13 @@ If the native app exposes device sensors, send only necessary derived/normalized
 
 For the inverse topology—a native desktop app whose bundled WebView is controlled by an external phone browser—use [13 — Native-shell WebView integration](13-native-shell-webview-integration.md). Keep the network session in bundled WebView code and cross into native authority only through typed, revalidated application IPC.
 
+For a native immersive Meta Quest target, use
+[16 — Native Meta Quest target and browser companion](16-native-meta-quest-integration.md).
+Keep the Spatial Activity and Kotlin reducer authoritative. A packaged WebView
+may carry VDO.Ninja signaling/data-channel bytes only; it does not receive the
+BRSP pairing secret or a native action API. Permission approval, pairing
+Accept, app launch, Guardian/Meta UI, and kiosk arm remain headset-only.
+
 ## 14. When to use remote desktop instead
 
 Use an established remote-desktop/streaming system when the requirement truly is:

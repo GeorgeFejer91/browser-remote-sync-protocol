@@ -90,6 +90,10 @@ The reference code enforces a minimum of 16 UTF-8 bytes only to reject obviously
 | Hidden-tab scheduling | Late messages and stale UI | Foreground workflow, lifecycle visibility, receiver-local freshness, hold-last semantics; do not claim timers override OS scheduling |
 | Cross-site scripting in host app | Secret/state theft and arbitrary actions | Strong CSP, output encoding, dependency control, no `eval`, application security review |
 | Compromised vendored SDK | Transport/application compromise | Pin exact version/source/license/hash; review updates; serve locally with CSP; dependency/security process |
+| Broad native WebView bridge | JavaScript reaches Android/Quest privilege | Load packaged allow-listed assets; expose only bounded lane/peer/payload operations; repeat BRSP validation in Kotlin; no action/native-method bridge |
+| Transport secret reused as native proof authority | Compromised transport can create a new authenticated native session | Use independent transport and BRSP pairing secrets; keep the BRSP bearer out of the target WebView |
+| Activity/Spatial shutdown retains remote authority | Commands arrive after the immersive owner is gone | One idempotent `onSpatialShutdown`/destroy owner; revoke and quiesce before asynchronous transport cleanup |
+| Foreground-service capability is overstated | Remote can appear available without an Activity-owned safe target, or use a type that does not match service work | Use an FGS only for actual matching service-owned work; otherwise Activity/ordinary notification; no boot/cold launch; publish exact Android + XR lifecycle policy |
 
 ## Scopes are necessary but not sufficient
 
@@ -150,6 +154,17 @@ Production deployments should:
 ## Safety boundary
 
 BRSP/1 is not suitable by itself for an actuator or high-consequence workflow. Those systems need independently reviewed identity, authorization, command interlocks, state-machine safety constraints, rate/energy limits, emergency stop, audit, redundancy, failure analysis, and often certified protocols.
+
+## Native Quest/WebView residual
+
+A native Quest target can keep the BRSP proof secret in Kotlin and give a
+bundled WebView only a separate VDO transport secret. That prevents transport
+JavaScript from completing a new BRSP proof by itself. It does not contain a
+WebView compromise after a legitimate connection reaches `ready`: the WebView
+can then observe/forge typed frames within the already granted scopes. Stronger
+containment needs native WebRTC/channel ownership or a reviewed per-frame MAC.
+Keep the bridge transport-only, scopes narrow, sessions expiring, and Stop
+headset-authoritative. See [16](16-native-meta-quest-integration.md).
 
 ## Next
 

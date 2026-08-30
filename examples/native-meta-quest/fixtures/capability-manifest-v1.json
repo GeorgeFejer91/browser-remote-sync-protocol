@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "action": "request-status",
+      "schemaVersion": 1,
+      "requiredScope": "app.observe",
+      "sensitivity": "normal",
+      "availabilityGuard": "always",
+      "remotelyEligible": true
+    },
+    {
+      "action": "request-capabilities",
+      "schemaVersion": 1,
+      "requiredScope": "app.observe",
+      "sensitivity": "normal",
+      "availabilityGuard": "always",
+      "remotelyEligible": true
+    },
+    {
+      "action": "set-interaction-mode",
+      "schemaVersion": 1,
+      "requiredScope": "panel.presentation.write",
+      "sensitivity": "normal",
+      "availabilityGuard": "interactive",
+      "remotelyEligible": true
+    },
+    {
+      "action": "set-panel-visible",
+      "schemaVersion": 1,
+      "requiredScope": "panel.presentation.write",
+      "sensitivity": "normal",
+      "availabilityGuard": "interactive",
+      "remotelyEligible": true
+    },
+    {
+      "action": "recenter-panel",
+      "schemaVersion": 1,
+      "requiredScope": "panel.presentation.write",
+      "sensitivity": "normal",
+      "availabilityGuard": "interactive",
+      "remotelyEligible": true
+    },
+    {
+      "action": "revoke",
+      "schemaVersion": 1,
+      "requiredScope": "session.safety",
+      "sensitivity": "normal",
+      "availabilityGuard": "always",
+      "remotelyEligible": true
+    },
+    {
+      "action": "enable-browser-remote",
+      "schemaVersion": 1,
+      "requiredScope": null,
+      "sensitivity": "headset_only",
+      "availabilityGuard": "headset-local",
+      "remotelyEligible": false
+    },
+    {
+      "action": "approve-controller",
+      "schemaVersion": 1,
+      "requiredScope": null,
+      "sensitivity": "headset_only",
+      "availabilityGuard": "headset-local",
+      "remotelyEligible": false
+    },
+    {
+      "action": "approve-runtime-permissions",
+      "schemaVersion": 1,
+      "requiredScope": null,
+      "sensitivity": "headset_only",
+      "availabilityGuard": "headset-local",
+      "remotelyEligible": false
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#071713">
+    <meta name="description" content="Typed browser remote and ECG activity view for Polar Remote Quest">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' wss://wss.vdo.ninja https://turnservers.vdo.ninja; media-src 'none'; worker-src 'self'; manifest-src 'self'; form-action 'none'">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="stylesheet" href="./src/styles.css">
+    <title>Polar Remote Quest Controller</title>
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Polar Remote Quest · BRSP/1</p>
+          <h1>Headset control</h1>
+          <p class="hero-copy">Control the native Quest app and view its live, bounded ECG activity projection from a phone or laptop.</p>
+        </div>
+        <span class="mode-badge">Data-only WebRTC</span>
+      </header>
+
+      <section class="pairing" aria-labelledby="pairing-heading">
+        <div class="section-heading">
+          <div>
+            <p class="step">Step 1</p>
+            <h2 id="pairing-heading">Find the headset</h2>
+          </div>
+          <span class="privacy-badge">Headset approval required</span>
+        </div>
+        <p class="note"><strong>The Beacon ID is a public address, not a password.</strong> Anyone who knows it can request a connection. The app accepts no command until a wearer chooses <strong>Accept</strong> inside the headset.</p>
+        <form id="beacon-form" novalidate>
+          <label for="beacon-id">Beacon ID</label>
+          <input id="beacon-id" name="beacon-id" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD-EF12-3456-7890-ABCD-EF12" maxlength="35" required aria-describedby="beacon-help">
+          <small id="beacon-help">Enter the 24 hexadecimal characters shown in Polar Remote Quest. Hyphens and spaces are optional.</small>
+          <label class="check-row"><input id="remember-beacon" type="checkbox"> Remember only this public Beacon ID on this device</label>
+          <div class="button-row">
+            <button id="find-headset" type="submit">Find headset</button>
+            <button id="request-control" type="button" disabled>Request control</button>
+            <button id="stop" type="button" class="secondary" disabled>Stop</button>
+          </div>
+        </form>
+        <output id="connection-status" class="status" aria-live="polite">Idle — no network session is open.</output>
+        <p class="approval-copy">After <strong>Request control</strong>, put on the headset and choose <strong>Accept</strong> or <strong>Reject</strong>. Refresh never authorizes or reconnects automatically.</p>
+      </section>
+
+      <section aria-labelledby="authority-heading">
+        <div class="section-heading">
+          <div><p class="step">Step 2</p><h2 id="authority-heading">Connection authority</h2></div>
+        </div>
+        <dl class="status-grid">
+          <div><dt>Authentication</dt><dd id="authentication">Not connected</dd></div>
+          <div><dt>Granted scopes</dt><dd id="scopes">None</dd></div>
+          <div><dt>Route</dt><dd id="route">Unknown</dd></div>
+          <div><dt>Command latency</dt><dd id="latency">Not measured</dd></div>
+          <div><dt>State freshness</dt><dd id="freshness">No target state</dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="ecg-heading">
+        <div class="section-heading">
+          <div><p class="step">Live observation</p><h2 id="ecg-heading">ECG activity</h2></div>
+          <output id="ecg-status" class="signal-badge" aria-live="polite">Waiting for headset</output>
+        </div>
+        <p class="note">A newest-only, normalized activity preview is displayed when the headset locally grants the ECG observation scope. It is not stored and is not a diagnostic medical trace.</p>
+        <div class="chart-shell">
+          <canvas id="ecg-chart" width="720" height="220" role="img" aria-label="No ECG activity received"></canvas>
+        </div>
+      </section>
+
+      <section aria-labelledby="actions-heading">
+        <div class="section-heading"><div><p class="step">Step 3</p><h2 id="actions-heading">Typed commands</h2></div></div>
+        <p class="note">Controls unlock only after headset approval, mutual proof, scope grant, and target manifest verification. Every button waits for an acknowledged target result.</p>
+        <div id="commands" class="commands" aria-live="polite"></div>
+        <output id="command-status" class="status" aria-live="polite">No command pending.</output>
+      </section>
+
+      <section aria-labelledby="state-heading">
+        <details>
+          <summary id="state-heading">Confirmed privacy-safe target state</summary>
+          <p class="note">Only fields in the compiled controller profile are rendered.</p>
+          <pre id="target-state">{}</pre>
+        </details>
+      </section>
+    </main>
+    <script src="../vendor/vdoninja/1.5.5/vdoninja-sdk.min.js" defer></script>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

@@ -10,6 +10,7 @@ This chapter inventories the exact defaults found in the repository's pinned VDO
 | --- | --- | --- | --- |
 | Two hosted browsers | HTTPS static/app host | Same or another approved HTTPS host | VDO signaling plus WebRTC, or product backend |
 | Tauri target plus phone | Bundled local WebView assets | Approved HTTPS companion origin | VDO in WebView plus WebRTC; typed IPC stays local |
+| Native Quest target plus browser | Kotlin/Meta Spatial APK with optional packaged transport-only WebView | Approved HTTPS companion/PWA origin | VDO in packaged WebView plus WebRTC; BRSP proof/actions stay in Kotlin |
 | Existing SaaS backend | HTTPS web app | HTTPS responsive companion | Authenticated WSS/WebTransport through product backend |
 | Offline/private LAN | Bundled/local HTTPS app | LAN HTTPS app | Owned WSS signaling/data service or raw WebRTC signaling; not the default VDO adapter |
 
@@ -114,6 +115,36 @@ Capabilities and CSP solve different problems:
 - BRSP proof/scopes constrain the remote peer's application authority.
 
 All four remain necessary at their respective boundaries.
+
+## Native Quest packaged transport WebView
+
+A Quest target can load the pinned VDO SDK and adapter from APK assets through
+AndroidX `WebViewAssetLoader` at the reserved HTTPS origin. Because that WebView
+has no visible product UI and owns only transport, its document can use a
+narrower policy:
+
+```html
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self';
+               connect-src https://turnservers.vdo.ninja wss://wss.vdo.ninja;
+               base-uri 'none'; form-action 'none'">
+```
+
+Also disable file/content access, DOM storage when unused, mixed content, and
+navigation outside `https://appassets.androidplatform.net/assets/`. Package the
+exact SDK/adapter/license bytes; do not load the companion or another remote
+origin in the bridge-enabled WebView.
+
+The VDO `transportSecret` may enter this WebView, but the BRSP `pairingSecret`
+stays in Kotlin. Expose only generation-bound bounded transport events and
+opaque lane payloads. Android warns that native WebView bridges are available
+to every frame and can expose application privilege when content or methods are
+too broad; see [Android's bridge guidance](https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges).
+
+This containment reduces pre-authentication authority but does not prevent a
+compromised WebView from forging typed frames after a legitimate session is
+ready. See [16](16-native-meta-quest-integration.md) for that residual,
+Android/Spatial lifecycle, and APK inspection.
 
 ## Serve and cache the pinned SDK correctly
 

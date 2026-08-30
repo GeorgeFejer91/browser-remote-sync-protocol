@@ -1,0 +1,66 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #071713;
+  color: #edfff7;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(46, 133, 100, .3), transparent 35rem),
+    linear-gradient(180deg, #071713, #0a1c16 58%, #071713);
+}
+
+main { width: min(100%, 880px); margin: auto; padding: max(1.1rem, env(safe-area-inset-top)) 1rem max(2.5rem, env(safe-area-inset-bottom)); }
+.hero { display: flex; gap: 1rem; align-items: flex-start; justify-content: space-between; padding: 1.25rem .1rem 1rem; }
+h1 { margin: .12rem 0; font-size: clamp(2.15rem, 9vw, 4.4rem); line-height: .98; letter-spacing: -.045em; }
+h2 { margin: 0; font-size: clamp(1.2rem, 4vw, 1.5rem); }
+.hero-copy { max-width: 42rem; margin: .65rem 0 0; color: #b7d4c8; line-height: 1.55; }
+.eyebrow, .step { margin: 0; color: #72efb5; font-size: .73rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.mode-badge, .privacy-badge, .signal-badge { flex: none; border: 1px solid #396c58; border-radius: 999px; padding: .42rem .68rem; color: #c9f7e2; background: rgba(13, 45, 35, .78); font-size: .78rem; }
+
+section { margin: 1rem 0; padding: clamp(1rem, 3vw, 1.35rem); background: rgba(17, 49, 39, .84); border: 1px solid #285846; border-radius: 1rem; box-shadow: 0 18px 50px rgba(0, 0, 0, .14); }
+.pairing { border-color: #3d8064; }
+.section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; margin-bottom: .8rem; }
+.note, .approval-copy, small { color: #b7d4c8; line-height: 1.5; }
+.note { margin: .4rem 0 1rem; }
+.approval-copy { margin: .85rem 0 0; font-size: .9rem; }
+form { display: grid; gap: .7rem; }
+label { font-weight: 720; }
+input, button { min-height: 3rem; border-radius: .62rem; font: inherit; }
+#beacon-id { width: 100%; padding: .65rem .75rem; border: 1px solid #5b9a80; background: #06110e; color: inherit; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .035em; text-transform: uppercase; }
+#beacon-id:focus { outline: 3px solid rgba(88, 232, 161, .28); border-color: #58e8a1; }
+.check-row { display: flex; gap: .55rem; align-items: center; color: #cce9dc; font-size: .9rem; font-weight: 600; }
+.check-row input { min-height: auto; width: 1.05rem; height: 1.05rem; accent-color: #58e8a1; }
+.button-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
+button { padding: .6rem .8rem; border: 1px solid #72efb5; background: #13704d; color: #fff; font-weight: 760; cursor: pointer; }
+button:hover:not(:disabled) { background: #19825a; }
+button.secondary { background: transparent; border-color: #759d8d; }
+button:disabled { opacity: .42; cursor: not-allowed; }
+.status { display: block; margin-top: .85rem; min-height: 1.4rem; padding: .7rem .8rem; border-left: 3px solid #58e8a1; background: rgba(3, 17, 12, .5); color: #d6f9e9; line-height: 1.4; }
+.status-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 0; }
+.status-grid div { min-width: 0; padding: .72rem; border-radius: .65rem; background: rgba(4, 22, 16, .45); }
+dt { color: #91b9a8; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
+dd { margin: .18rem 0 0; overflow-wrap: anywhere; font-weight: 660; }
+.commands { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .65rem; }
+.commands button { text-align: left; }
+.chart-shell { width: 100%; min-height: 180px; overflow: hidden; border: 1px solid #315f4e; border-radius: .75rem; background: #06110e; }
+#ecg-chart { display: block; width: 100%; height: 220px; }
+details summary { cursor: pointer; font-weight: 760; }
+pre { overflow: auto; margin: .8rem 0 0; padding: .8rem; border-radius: .6rem; background: #06110e; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .8rem; }
+
+@media (max-width: 620px) {
+  .hero { display: block; }
+  .mode-badge { display: inline-block; margin-top: 1rem; }
+  .button-row { grid-template-columns: 1fr; }
+  .status-grid { grid-template-columns: 1fr; }
+  .section-heading { align-items: flex-start; }
+  .privacy-badge { max-width: 9rem; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }

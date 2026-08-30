@@ -58,6 +58,7 @@ The Node test suite uses paired in-memory lanes so it can deterministically cove
 | Session secrecy | Demo stop clears generated pairing material synchronously and restart produces fresh values. |
 | Delivery modes | Control is ordered/reliable and live state is unordered with zero retransmits. |
 | Application seam | Fixed non-executable Marionette manifest, exact state/command/intent validation, revision conflict, momentary lease, persistent hold, and producer-first Stop are tested independently of transport. |
+| Native Quest fragments | Manifest/profile parity, headset-only exclusion, manifest/hash mutation gate, privacy-safe state, generation fencing, explicit close, reliable backpressure fail-close, Stop ordering, and static Kotlin/Android authority boundaries. |
 | Supply chain | Pinned SDK files match recorded SHA-256 hashes and local links resolve. |
 
 For changes to protocol validation, add a negative test before changing behavior. For a new capability, test both negotiated and absent-capability paths.
@@ -156,6 +157,43 @@ Use at least one iOS/WebKit and one Android/Chromium phone when those platforms 
 - close/reload while a momentary control is held.
 
 The target must neutralize every `expiry: "neutral"` control after its receiver-local lease. A final phone `pointerup`, `pagehide`, or Stop packet is useful but cannot be the safety boundary.
+
+## Native Meta Quest target matrix
+
+A native Quest target adds distinct evidence stages. Do not collapse them into
+one “APK tested” result:
+
+1. pure Kotlin/JavaScript canonical, HMAC, session, reducer, and deadline tests;
+2. Android compile/lint plus manifest, signer, native-library, packaged-asset,
+   permission, and APK SHA-256 inspection;
+3. serial-scoped install/launch/process and bounded fatal-log checks;
+4. visible Spatial panel and one authenticated browser command with matching
+   `applied` revision, sanitized state, native marker, and visible effect;
+5. foreground/pause/shutdown, peer loss, notification Stop, expiry, and process
+   recreation cases;
+6. physical Android phone interaction and network/lifecycle matrix;
+7. sensor-specific evidence such as worn-H10 discovery, connection, ECG mode,
+   sample cadence, and remote start/stop;
+8. observed direct/relay route and command-to-applied latency distribution;
+9. separately implemented offline-LAN adapter with WAN disconnected.
+
+Keep permission approval, pairing Enable/Accept, application launch,
+Guardian/Meta UI, and kiosk arm headset-only. Compute target interactivity from
+Android plus VR/OpenXR readiness/focus (and the declared HMD-mounted policy),
+then verify each non-interactive path rejects unsafe mutations as
+`target_not_interactive` and never applies them on return. A
+foreground-service notification is not evidence that the Spatial Activity or
+authenticated session survives Activity destruction, and a service type is
+valid only when the service owns work matching that type.
+
+Also prove that both hellos are emitted immediately from independently fixed
+requested/granted sets. Local Accept may gate proof/`ready` and application
+authority, but it must not delay or rewrite the target hello. If the pilot
+clears proof material at `ready`, peer loss must terminate that session and a
+replacement must require a fresh headset invitation.
+
+The complete contract and copyable fixtures are in
+[16 — Native Meta Quest target and browser companion](16-native-meta-quest-integration.md).
 
 ## Real transport matrix
 
@@ -256,4 +294,4 @@ Copy the record template and inspect the current open matrix in [15 — Qualific
 
 ## Current repository status
 
-The repository includes automated protocol/adapter/application-seam tests, the contract checker, and a deterministic real-browser smoke fixture. The application starter implements a target-local lease for its bounded Marionette pointer profile; that does not constitute a general reusable companion SDK or physical-device qualification. The generic demo remains suitable for attended VDO browser smoke testing. Production identity, invitation expiry/revocation, multi-controller arbitration, public-VDO evidence for the current candidate, packaged native-shell/phone evidence, and cross-browser physical-device qualification remain open and are not claimed complete. See the dated [current record](15-qualification-record.md).
+The repository includes automated protocol/adapter/application-seam tests, the contract checker, and a deterministic real-browser smoke fixture. The application starter implements a target-local lease for its bounded Marionette pointer profile; that does not constitute a general reusable companion SDK or physical-device qualification. The generic demo remains suitable for attended VDO browser smoke testing. The native Quest chapter and example are reusable architecture/fixture surfaces, not a physical Quest/phone/H10 receipt. Production identity, invitation expiry/revocation, multi-controller arbitration, public-VDO evidence for the current candidate, packaged native-target/phone evidence, and cross-browser physical-device qualification remain open and are not claimed complete. See the dated [current record](15-qualification-record.md).

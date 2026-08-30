@@ -47,6 +47,13 @@ Local loading avoids a runtime CDN dependency and makes the reviewed bytes expli
 
 An npm-based application can instead pin `@vdoninja/sdk` to an exact reviewed version. Keep the lockfile and license/source provenance.
 
+For a native Meta Quest target, these exact assets may be packaged in a local
+Android WebView used only for signaling and RTCDataChannel bytes. Give that
+WebView a separate VDO transport secret, not the Kotlin BRSP proof secret; use
+a generation-bound bounded bridge; and repeat all BRSP validation in native
+code. This pattern and its post-`ready` compromise residual are specified in
+[16 — Native Meta Quest target](16-native-meta-quest-integration.md).
+
 ## No page-load connection
 
 Construct neither the SDK nor the adapter at module top level. The page may load the local SDK file, render privacy information, and generate no network session.
@@ -73,7 +80,8 @@ label:     BRSP demo target
 
 The label is public display metadata and contains no secret or private identity.
 
-The same high-entropy pairing secret is supplied to the SDK password option and BRSP proof layer:
+The browser demonstration supplies the same high-entropy secret to the SDK
+password option and BRSP proof layer:
 
 ```js
 const sdk = new VDONinjaSDK({
@@ -87,6 +95,12 @@ await sdk.joinRoom({ room, password: sharedSecret });
 ```
 
 The SDK password helps protect/hash signaling material, while BRSP's transcript proof performs explicit application authentication and scope negotiation. Keep both layers. Do not confuse the SDK's historical default password with a secret unique to your session; always supply a generated value.
+
+Sharing one value is a reference-demo integration choice, not a BRSP wire
+requirement. When the transport component is less trusted than the application
+authority—such as a packaged Quest WebView in front of a Kotlin target—generate
+independent transport and BRSP secrets and deliver both through the bounded
+invitation. The transport receives only its own value.
 
 All data-only peers that must interoperate use the same explicit salt. VDO.Ninja's public web UI requires its own documented salt compatibility; this repository connects SDK-to-SDK.
 
@@ -290,4 +304,4 @@ transport.addEventListener("statemessage", passStateToBrsp);
 transport.addEventListener("peerclose", markDisconnected);
 ```
 
-Continue with [05 — Implementation guide](05-implementation-guide.md) to integrate a real application's reducer and view.
+Continue with [05 — Implementation guide](05-implementation-guide.md) to integrate a real application's reducer and view. Native Quest targets should also follow [16](16-native-meta-quest-integration.md).

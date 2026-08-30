@@ -19,6 +19,12 @@ Native application core
 
 The external browser never receives a Tauri capability, IPC URL, native command name, shell, filesystem, raw sensor stream, or direct native-process connection. It talks only to the authenticated BRSP endpoint in the WebView.
 
+This chapter's concrete shell is desktop Tauri. For a native immersive Meta
+Quest application, do not put BRSP authority in the WebView and do not add a
+Tauri layer merely to reuse browser code. Keep proof/scopes/actions in Kotlin
+and use a packaged WebView only as an optional transport adapter. Follow
+[16 — Native Meta Quest target and browser companion](16-native-meta-quest-integration.md).
+
 ## Decide where authority lives
 
 ### Browser-safe scene authority
@@ -277,4 +283,4 @@ Do not copy the case study's public/passwordless discovery into a generalized co
 - Dev and packaged CSP/builds are tested separately.
 - Same-machine WebView/browser, physical phone/WebView, direct, forced relay, sleep/wake, and window lifecycle results are separate qualification rows.
 
-Continue with [14 — Deployment, network, and CSP](14-deployment-network-and-csp.md), then record exact evidence using [15 — Current qualification record](15-qualification-record.md).
+Continue with [14 — Deployment, network, and CSP](14-deployment-network-and-csp.md), then record exact evidence using [15 — Current qualification record](15-qualification-record.md). Native Quest adopters use [16](16-native-meta-quest-integration.md) for Android/Spatial lifecycle, pairing, and APK qualification.
