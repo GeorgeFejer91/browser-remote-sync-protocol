@@ -102,12 +102,13 @@ test("ECG preview requires its negotiated scope and survives reliable projection
 });
 
 test("GitHub Pages source keeps activation, approval, privacy, and path boundaries", async () => {
-  const [html, app, beacon, worker, workflow] = await Promise.all([
+  const [html, app, beacon, worker, workflow, styles] = await Promise.all([
     readFile(join(root, "polar-remote-quest/index.html"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/app.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/beacon.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/sw.js"), "utf8"),
     readFile(join(root, ".github/workflows/pages.yml"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/styles.css"), "utf8"),
   ]);
 
   assert.match(html, /id="beacon-id"/u);
@@ -130,6 +131,7 @@ test("GitHub Pages source keeps activation, approval, privacy, and path boundari
   assert.match(worker, /fixed static allow-list/u);
   assert.match(worker, /requestUrl\.search/u);
   assert.doesNotMatch(worker, /localStorage|IndexedDB|pairingSecret|transportSecret/u);
+  assert.match(styles, /\.signal-badge\s*\{[^}]*max-width:\s*100%[^}]*overflow-wrap:\s*anywhere/su);
 
   assert.match(workflow, /branches: \[main\]/u);
   assert.match(workflow, /actions\/configure-pages@v6/u);
