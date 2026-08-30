@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Two-browser BRSP/1 remote-control demonstration over VDO.Ninja data-only WebRTC channels.">
+  <title>BRSP/1 two-browser demo</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="../../vendor/vdoninja/1.5.5/vdoninja-sdk.min.js" defer></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <p class="eyebrow">Browser Remote Sync Protocol / BRSP/1</p>
+      <h1>Control one browser from another without sending video.</h1>
+      <p class="lede">The target owns the scene. The controller sends scoped commands, and the target returns authoritative live state over the same duplex WebRTC connection.</p>
+    </header>
+
+    <section class="setup card" aria-labelledby="setup-title">
+      <div class="section-heading">
+        <div>
+          <p class="step">Step 1</p>
+          <h2 id="setup-title">Choose this browser’s role</h2>
+        </div>
+        <span id="sdk-state" class="badge neutral">SDK local</span>
+      </div>
+
+      <fieldset class="role-switch">
+        <legend class="sr-only">Browser role</legend>
+        <label><input type="radio" name="role" value="target" checked> Target app</label>
+        <label><input type="radio" name="role" value="controller"> Controller app</label>
+      </fieldset>
+
+      <div class="field-grid">
+        <label>
+          <span>Room / session ID</span>
+          <input id="room" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="Generated for a target; paste for a controller">
+        </label>
+        <label>
+          <span>Pairing secret</span>
+          <input id="secret" type="password" autocomplete="new-password" spellcheck="false" placeholder="Generated for a target; share out of band">
+        </label>
+      </div>
+
+      <details>
+        <summary>Network and privacy options</summary>
+        <label class="check"><input id="force-turn" type="checkbox"> Force TURN relay for qualification or peer-IP privacy</label>
+        <p>Direct WebRTC peers can learn one another’s IP addresses. VDO.Ninja signaling, STUN, and possibly TURN are third-party infrastructure. A relay may add latency. Do not put secrets in room names or public labels.</p>
+      </details>
+
+      <div class="actions">
+        <button id="start" class="primary" type="button">Start target</button>
+        <button id="stop" type="button" disabled>Stop</button>
+      </div>
+      <p id="setup-help" class="help">Starting a target generates a room and a 192-bit secret if either field is empty. Share both values through a separate trusted channel.</p>
+      <p id="setup-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section class="status card" aria-labelledby="status-title">
+      <div class="section-heading">
+        <div>
+          <p class="step">Step 2</p>
+          <h2 id="status-title">Verify the connection</h2>
+        </div>
+        <div class="badges" aria-label="Connection status">
+          <span id="transport-badge" class="badge neutral">Transport idle</span>
+          <span id="auth-badge" class="badge neutral">Not authenticated</span>
+          <span id="route-badge" class="badge neutral">Route unknown</span>
+        </div>
+      </div>
+      <p id="status-live" class="status-line" role="status" aria-live="polite">No connection is created on page load.</p>
+      <div class="session-values" hidden id="session-values">
+        <div><span>Room</span><code id="room-readback"></code></div>
+        <div><span>Secret</span><code id="secret-readback"></code></div>
+      </div>
+    </section>
+
+    <section class="workspace" aria-labelledby="workspace-title">
+      <div class="stage card">
+        <div class="section-heading compact">
+          <div>
+            <p class="step">Step 3</p>
+            <h2 id="workspace-title">Shared authoritative scene</h2>
+          </div>
+          <span id="revision" class="revision">revision 0</span>
+        </div>
+        <div id="scene" class="scene" aria-label="Synchronized scene">
+          <div class="grid-lines"></div>
+          <div id="orb" class="orb" aria-hidden="true"></div>
+          <p id="hold-label" class="hold-label" hidden>Signal stale — holding the last accepted state</p>
+        </div>
+      </div>
+
+      <aside class="controls card" aria-label="Scene controls">
+        <h2>Controls</h2>
+        <p id="control-mode">Target changes are authoritative and are sent back to the controller.</p>
+        <label><span>Horizontal <output id="x-output">0.00</output></span><input id="x" type="range" min="-1" max="1" step="0.01" value="0"></label>
+        <label><span>Vertical <output id="y-output">0.00</output></span><input id="y" type="range" min="-1" max="1" step="0.01" value="0"></label>
+        <label><span>Hue <output id="hue-output">205°</output></span><input id="hue" type="range" min="0" max="360" step="1" value="205"></label>
+        <label><span>Scale <output id="scale-output">1.00</output></span><input id="scale" type="range" min="0.6" max="1.5" step="0.01" value="1"></label>
+        <label class="check"><input id="pulse" type="checkbox" checked> Pulse animation</label>
+        <button id="reset" type="button">Reset scene</button>
+        <p class="control-note">Sliders use the zero-backlog live-intent lane; Reset uses a reliable acknowledged command. The shared display changes only when the target returns authoritative state.</p>
+      </aside>
+    </section>
+
+    <section class="card log-card" aria-labelledby="log-title">
+      <div class="section-heading compact"><h2 id="log-title">Bounded session log</h2><button id="clear-log" type="button">Clear</button></div>
+      <ol id="log" aria-live="polite"></ol>
+    </section>
+
+    <footer>
+      <p>This demonstration is a reference implementation, not a remote desktop: it transmits typed application meaning, never pixels, pointer events, DOM access, or arbitrary JavaScript.</p>
+      <p><a href="../../docs/03-protocol-specification.md">Protocol specification</a> · <a href="../../docs/04-vdo-ninja-adapter.md">VDO.Ninja setup</a> · <a href="../../docs/06-problems-and-solutions.md">Lessons learned</a></p>
+    </footer>
+  </main>
+</body>
+</html>

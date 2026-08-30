@@ -1,0 +1,16 @@
+{
+  "name": "browser-remote-sync-protocol",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A transport-neutral browser remote-control and live-state synchronization protocol with a VDO.Ninja data-channel adapter.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check-repository.mjs && node --test",
+    "serve": "node scripts/serve.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
