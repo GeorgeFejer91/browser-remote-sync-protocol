@@ -23,6 +23,22 @@ const required = [
   "docs/14-deployment-network-and-csp.md",
   "docs/15-qualification-record.md",
   "examples/application-integration/README.md",
+  "examples/native-meta-quest/README.md",
+  "examples/native-meta-quest/android/AndroidManifest.xml",
+  "examples/native-meta-quest/android/BundledWebViewTransport.kt",
+  "examples/native-meta-quest/android/RemoteSessionOwner.kt",
+  "examples/native-meta-quest/android/RemoteSessionService.kt",
+  "examples/native-meta-quest/companion/profile.js",
+  "examples/native-meta-quest/fixtures/capability-manifest-v1.json",
+  "examples/native-meta-quest/fixtures/commands-v1.json",
+  "examples/native-meta-quest/fixtures/remote-state-v1.json",
+  "examples/native-meta-quest/kotlin/QuestActionContract.kt",
+  "examples/native-meta-quest/kotlin/QuestActionRouter.kt",
+  "examples/native-meta-quest/test/native-meta-quest.test.js",
+  "examples/native-meta-quest/webview/bridge-forwarding.js",
+  "examples/native-meta-quest/webview/index.html",
+  "examples/native-meta-quest/webview/index.js",
+  "examples/native-meta-quest/webview/transport-lifecycle.js",
   "examples/two-browser-demo/index.html",
   "qualification/README.md",
   "qualification/browser-smoke.html",
@@ -77,12 +93,86 @@ assert.match(
 );
 assert.doesNotMatch(app, /^await\s+transport\.start\(\)/mu, "No unscoped top-level transport start is allowed.");
 
+const questExampleRoot = join(root, "examples/native-meta-quest");
+const questManifestFixture = JSON.parse(readFileSync(join(questExampleRoot, "fixtures/capability-manifest-v1.json"), "utf8"));
+const questManifestHash = createHash("sha256").update(canonicalJson(questManifestFixture)).digest("hex");
+const expectedQuestManifestHash = "a6baeaa8727b13c316f733909fb30297183308ec3fe4eda3ef0c8a9c0376cc20";
+assert.equal(questManifestHash, expectedQuestManifestHash, "Native Quest capability fixture/hash changed; update both language profiles deliberately.");
+assert.equal(
+  new Set(questManifestFixture.entries.map((entry) => entry.action)).size,
+  questManifestFixture.entries.length,
+  "Every native Quest action must appear exactly once in the example manifest.",
+);
+assert.ok(
+  questManifestFixture.entries.filter((entry) => !entry.remotelyEligible).every(
+    (entry) => entry.sensitivity === "headset_only" && entry.requiredScope === null,
+  ),
+  "Non-remote native Quest actions must remain explicitly headset-only.",
+);
+
+const questProfile = readFileSync(join(questExampleRoot, "companion/profile.js"), "utf8");
+const questContract = readFileSync(join(questExampleRoot, "kotlin/QuestActionContract.kt"), "utf8");
+for (const profileSource of [questProfile, questContract]) {
+  assert.match(profileSource, new RegExp(expectedQuestManifestHash), "Both native Quest language profiles must pin the fixture hash.");
+}
+for (const forbidden of ["invoke", "eval", "selector", "shell", "filename", "android-intent"]) {
+  assert.ok(
+    !questManifestFixture.entries.some((entry) => entry.action === forbidden),
+    `Native Quest example must not expose generic ${forbidden} authority.`,
+  );
+}
+
+const questAndroidManifest = readFileSync(join(questExampleRoot, "android/AndroidManifest.xml"), "utf8");
+assert.match(questAndroidManifest, /<receiver[\s\S]*android:exported="false"/, "Native Quest notification Stop receiver must remain non-exported.");
+assert.doesNotMatch(questAndroidManifest, /FOREGROUND_SERVICE|foregroundServiceType/, "A notification-only example must not claim foreground-service work.");
+assert.match(questAndroidManifest, /android:usesCleartextTraffic="false"/, "Native Quest fragment must reject cleartext traffic.");
+assert.doesNotMatch(
+  questAndroidManifest,
+  /CAMERA|RECORD_AUDIO|ACCESS_FINE_LOCATION|MANAGE_EXTERNAL_STORAGE|RECEIVE_BOOT_COMPLETED/,
+  "Native Quest BRSP example must not add media/location/storage/boot authority.",
+);
+
+const questWebView = readFileSync(join(questExampleRoot, "android/BundledWebViewTransport.kt"), "utf8");
+for (const invariant of [
+  /settings\.allowFileAccess = false/,
+  /settings\.allowContentAccess = false/,
+  /MIXED_CONTENT_NEVER_ALLOW/,
+  /WebViewAssetLoader/,
+  /activeGeneration/,
+  /JSONObject\.quote\(payload\)/,
+]) assert.match(questWebView, invariant, "Native Quest WebView transport boundary weakened.");
+assert.doesNotMatch(questWebView, /pairingSecret|android\.content\.Intent/, "Pairing/native intent authority must not enter the transport WebView.");
+
+const questService = readFileSync(join(questExampleRoot, "android/RemoteSessionService.kt"), "utf8");
+assert.match(questService, /class RemoteStopReceiver : BroadcastReceiver/, "Native Quest Stop notification must use the private receiver fragment.");
+assert.doesNotMatch(questService, /startForeground|startActivity|BOOT_COMPLETED/, "Native Quest notification Stop path must not claim FGS work, cold-launch, or start at boot.");
+
+const questLifecycle = readFileSync(join(questExampleRoot, "webview/transport-lifecycle.js"), "utf8");
+assert.match(questLifecycle, /this\.configuration = null;[\s\S]*this\.transport = null;[\s\S]*await this\.safeStop\(closing\)/, "Native Quest Stop must clear ownership before awaited signaling cleanup.");
+assert.match(questLifecycle, /if \(result !== "queued" && result !== "accepted"\)/, "Rejected native ingress must close the peer.");
+assert.doesNotMatch(questLifecycle, /getUserMedia|captureStream/, "Native Quest transport fragment must remain data-only.");
+
+const questBridgeHtml = readFileSync(join(questExampleRoot, "webview/index.html"), "utf8");
+const questBridgeBootstrap = readFileSync(join(questExampleRoot, "webview/index.js"), "utf8");
+assert.match(questBridgeHtml, /vendor\/vdoninja\/1\.5\.5\/vdoninja-sdk\.min\.js/, "Native Quest bridge must load the pinned local VDO SDK.");
+assert.match(questBridgeHtml, /default-src 'none'/, "Native Quest bridge must retain a narrow bundled-page CSP.");
+assert.match(questBridgeBootstrap, /transportFactory: \(configuration\) => new VdoNinjaTransport/, "VDO construction must remain behind explicit native configuration.");
+assert.doesNotMatch(questBridgeBootstrap, /^await\s+.*\.start\(\)/mu, "Native Quest bridge must not start transport at module load.");
+
 function walk(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     if (entry.name === ".git" || entry.name === "node_modules") return [];
     const path = join(directory, entry.name);
     return entry.isDirectory() ? walk(path) : [path];
   });
+}
+
+function canonicalJson(value) {
+  if (value === null || typeof value === "boolean" || typeof value === "number" || typeof value === "string") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
 }
 
 const linkPattern = /\[[^\]]*\]\((?!https?:|mailto:|#)([^)#]+)(?:#[^)]+)?\)/gu;

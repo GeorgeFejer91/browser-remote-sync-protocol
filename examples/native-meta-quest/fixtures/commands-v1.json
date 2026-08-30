@@ -1,0 +1,18 @@
+{
+  "valid": [
+    { "action": "request-status", "scope": "app.observe", "args": {} },
+    { "action": "request-capabilities", "scope": "app.observe", "args": {} },
+    { "action": "set-interaction-mode", "scope": "panel.presentation.write", "args": { "mode": "pointer" } },
+    { "action": "set-interaction-mode", "scope": "panel.presentation.write", "args": { "mode": "direct" } },
+    { "action": "set-panel-visible", "scope": "panel.presentation.write", "args": { "visible": false } },
+    { "action": "recenter-panel", "scope": "panel.presentation.write", "args": {} },
+    { "action": "revoke", "scope": "session.safety", "args": {} }
+  ],
+  "invalid": [
+    { "action": "set-interaction-mode", "scope": "panel.presentation.write", "args": { "mode": "gaze" } },
+    { "action": "set-panel-visible", "scope": "panel.presentation.write", "args": { "visible": true, "later": true } },
+    { "action": "enable-browser-remote", "scope": "session.safety", "args": {} },
+    { "action": "invoke", "scope": "panel.presentation.write", "args": { "method": "anything" } },
+    { "action": "recenter-panel", "scope": "panel.presentation.write", "args": { "selector": "#panel" } }
+  ]
+}

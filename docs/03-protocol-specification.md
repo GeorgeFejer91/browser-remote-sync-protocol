@@ -505,5 +505,7 @@ A conforming implementation proves at least:
 - VDO adapter: [`src/vdo-ninja-transport.js`](../src/vdo-ninja-transport.js)
 - Tests: [`test/brsp.test.js`](../test/brsp.test.js) and [`test/vdo-ninja-transport.test.js`](../test/vdo-ninja-transport.test.js)
 - Demo: [`examples/two-browser-demo/`](../examples/two-browser-demo/index.html)
+- Native Meta Quest profile: [guide](16-native-meta-quest-integration.md) and
+  [`examples/native-meta-quest/`](../examples/native-meta-quest/README.md)
 
 Continue with [04 — VDO.Ninja adapter](04-vdo-ninja-adapter.md) for the exact SDK setup and event flow.

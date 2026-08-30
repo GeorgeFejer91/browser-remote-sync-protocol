@@ -10,6 +10,7 @@ This ledger distinguishes normative standards, current service/SDK documentation
 | --- | --- | --- |
 | BRSP core, demo, tests, and documentation | Original repository work generalized from the public implementation lessons below | MIT, except named third-party files |
 | Application-integration starter and deterministic browser qualification fixture | Original repository work implementing the documented Marionette seam | MIT |
+| Native Meta Quest integration fragments and deterministic fixtures | Original repository work extracting an application-neutral Kotlin/Android/WebView boundary from the Polar Remote Quest pilot | MIT; fragments are not a complete/qualified APK |
 | VDO.Ninja SDK 1.5.5 files under `vendor/vdoninja/1.5.5/` | Copied from the Affect Tracker pin, which identifies the upstream VDO.Ninja SDK distribution | Unmodified runtime files; MPL-2.0 retained; exact hashes checked |
 | VDO adapter concepts | Current VDO.Ninja SDK API plus behavior learned in Affect Tracker | Adapter code newly written for this repository |
 
@@ -98,6 +99,57 @@ The native-shell recipe uses Tauri v2 as the concrete example while keeping the 
 Tauri documentation is version-sensitive. Adopters must inspect the generated schemas and official docs for the exact pinned Tauri/plugin version; the examples do not grant filesystem, shell, process, opener, or arbitrary HTTP authority.
 
 BRSP's canonical JSON definition is project-specific. The repository does not claim RFC 8785 conformance.
+
+## Native Android and Meta Quest sources
+
+The native Quest profile in [16](16-native-meta-quest-integration.md) uses
+primary platform documentation for version-sensitive boundaries:
+
+| Official source | Use in this repository |
+| --- | --- |
+| [Meta Spatial SDK Activity lifecycle](https://developers.meta.com/horizon/documentation/spatial-sdk/spatial-sdk-activity-lifecycle/) | `AppSystemActivity`, required immersive `configChanges`, VR-ready/pause and HMD signals independent of Android resume/pause, and `onSpatialShutdown()` as the final Spatial cleanup owner |
+| [Android foreground-service types](https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device) | Android 14 type-specific declaration/permission/runtime prerequisites and the bounded `connectedDevice` use case |
+| [Launch a foreground service](https://developer.android.com/develop/background-work/services/fgs/launch) | visible-start restrictions, promotion with a declared service type, and target-SDK permission checks |
+| [AndroidX `WebViewAssetLoader`](https://developer.android.com/reference/androidx/webkit/WebViewAssetLoader.html) | packaged assets over the reserved HTTPS origin with Same-Origin-compatible loading and file/content access disabled |
+| [Android WebView native-bridge risks](https://developer.android.com/privacy-and-security/risks/insecure-webview-native-bridges) | why the target bridge must load only packaged content and expose no sensitive or generic native operation |
+
+These sources are version-sensitive. Pin the Meta Spatial SDK, Android target
+SDK, AndroidX WebKit, and system WebView used by the candidate, then re-check
+the current official requirements. An Android foreground service is not a
+claim that a Spatial Activity or BRSP session survives destruction.
+
+## Polar Remote Quest pilot
+
+The native chapter was developed against an independent pilot named **Polar
+Remote Quest**. The pilot uses a native Meta Spatial SDK Activity, pure Kotlin
+BRSP target, Polar H10 adapter, packaged VDO transport-only WebView, and
+Chromium companion. Its architecture contributed these reusable lessons:
+
+- inventory every local action exactly once as remotely eligible or
+  headset-only and hash the canonical capability manifest;
+- keep controller epoch/nonce local to the controller and limit the QR to room,
+  session, transport secret, and pairing secret;
+- separate the WebView's VDO secret from Kotlin's BRSP proof key;
+- queue WebView ingress onto one native owner thread with bounded admission and
+  generation-fence every asynchronous transport callback;
+- reject non-interactive mutations without deferring them;
+- make Spatial shutdown and notification Stop producer-first/idempotent;
+- keep route/RTT diagnostics out of semantic revision changes;
+- state the post-`ready` WebView compromise residual explicitly;
+- preserve BRSP's immediate-hello rule while withholding target proof/ready
+  until local controller acceptance, with the target's grantable set fixed
+  before the lanes open;
+- compute interactive eligibility from Android plus VR/OpenXR state, not
+  `onResume()` alone;
+- use a foreground service type only for actual service-owned work matching
+  that type, never as a cosmetic notification classification;
+- end the pilot session on peer loss and require a fresh headset invitation
+  rather than promising reconnect after its proof key has been cleared.
+
+Until an immutable public pilot commit and qualification receipt are linked,
+this is source-context and host-built architecture evidence only. It is not
+physical Quest, phone, H10, route, offline-LAN, latency, or BRSP product
+qualification. A later record must add rather than rewrite that boundary.
 
 ## Affect Tracker source implementation
 

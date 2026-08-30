@@ -10,6 +10,7 @@ The companion starter modules are in [`examples/application-integration/`](../ex
 | --- | --- | --- | --- |
 | Browser app plus phone companion | Primary browser page | HTTPS phone page | VDO.Ninja data-only when no real-time backend exists |
 | Tauri desktop app plus phone browser | Bundled local WebView, with typed native IPC behind it | HTTPS phone page | VDO.Ninja in the WebView; see [13](13-native-shell-webview-integration.md) |
+| Native Meta Quest app plus browser | Kotlin/Meta Spatial target, optional transport-only packaged WebView | HTTPS phone/laptop page | VDO.Ninja data-only first; see [16](16-native-meta-quest-integration.md) |
 | Existing authenticated web product | Browser connected to product backend | Browser/phone connected to same backend | WebSocket with server authorization and fan-out |
 | Offline private LAN | Browser/native target on the LAN | LAN browser | Owned signaling plus raw WebRTC, or a deliberately deployed WSS service |
 | Command-line or automation client | App reducer behind an authenticated endpoint | Native CLI/service | BRSP envelopes over an owned WebSocket/raw-WebRTC adapter; never a remote shell |
@@ -318,4 +319,4 @@ The Affect Tracker desktop/browser case study at commit [`9e45c4c`](https://gith
 - Deployment has exact CSP/network inventory and no runtime CDN.
 - Deterministic tests, attended transport evidence, physical phone evidence, and native-shell evidence remain separate claims.
 
-Continue with [13 — Native-shell WebView integration](13-native-shell-webview-integration.md) for a Tauri desktop target or [14 — Deployment, network, and CSP](14-deployment-network-and-csp.md) for browser hosting and network policy.
+Continue with [13 — Native-shell WebView integration](13-native-shell-webview-integration.md) for a Tauri desktop target, [16 — Native Meta Quest target](16-native-meta-quest-integration.md) for an immersive Android target, or [14 — Deployment, network, and CSP](14-deployment-network-and-csp.md) for browser hosting and network policy.

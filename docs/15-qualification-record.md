@@ -13,7 +13,7 @@ Runnable browser artifacts live under [`qualification/`](../qualification/README
 | 2 | Real browser modules with deterministic in-process transport | Browser ES modules/Web Crypto, controller/target handshake and UI viewport behavior | Signaling, ICE, direct/TURN route, radio/OS lifecycle |
 | 3 | Attended two-browser VDO run on one machine | Pinned SDK signaling/data-only interoperability and observed route for that environment | Physical device, radio transition, native WebView |
 | 4 | Attended physical browser devices | Touch/layout/browser lifecycle and real network route for named devices | Native desktop IPC/WebView behavior unless one endpoint is the app |
-| 5 | Packaged native-shell app plus external physical browser | Actual WebView, CSP, capabilities, IPC, OS/window lifecycle, named phone/browser | Other operating systems, devices, networks, or release channels |
+| 5 | Packaged native target plus external physical browser | Actual desktop WebView or Quest APK, CSP/bridge, native authority, lifecycle, named phone/browser | Other operating systems, devices, networks, sensors, or release channels |
 | 6 | Published product support matrix | Exact supported combinations and operational acceptance | Unlisted combinations |
 
 Every result records the lowest tier that directly exercises the claim. A higher tier supplements rather than erases deterministic lower-tier tests.
@@ -42,7 +42,7 @@ The candidate was checked with:
 npm run check
 ```
 
-Recorded local result on 2026-08-30: `npm run check` **passed** the repository contract/hash/link checks and all **32/32** Node tests, with zero failures, skips, cancellations, or todos. `npm run check` invokes `node --test`, so this receipt does not pretend a redundant separately captured `npm test` run occurred.
+Recorded local result on 2026-08-30: `npm run check` **passed** the repository contract/hash/link checks and all **41/41** Node tests, with zero failures, skips, cancellations, or todos. `npm run check` invokes `node --test`, so this receipt does not pretend a redundant separately captured `npm test` run occurred.
 
 The suite covers, at minimum:
 
@@ -57,9 +57,14 @@ The suite covers, at minimum:
 - Stop-wins lifecycle races, complete failed-start cleanup, and inert stale SDK completions/callbacks;
 - inert application wrapper construction, exact app reducer validation, rejection of an immortal initially-active lease, momentary lease expiry, persistent hold, and producer-first teardown;
 - synchronous demo pairing-material clearing and fresh values on restart;
-- pinned SDK hashes, local links, no media capture, and no direct private signaling WebSocket use.
+- pinned SDK hashes, local links, no media capture, and no direct private signaling WebSocket use;
+- native Meta Quest integration fragments: byte-stable manifest/profile,
+  headset-only exclusion, manifest/hash mutation gate, privacy-safe projection,
+  inert/generation-fenced transport lifecycle, explicit peer-close revocation,
+  reliable backpressure fail-close, producer-first Stop, and static
+  Kotlin/Android authority boundaries.
 
-The final CI run for the publication commit remains the immutable remote confirmation. The local 32/32 result applies to this candidate tree and must not be copied forward after code, tests, pinned SDK, or application profile changes.
+The final CI run for the publication commit remains the immutable remote confirmation. The local 41/41 result applies to this candidate tree and must not be copied forward after code, tests, pinned SDK, application profile, or native integration fragment changes.
 
 ### Browser smoke evidence
 
@@ -95,6 +100,37 @@ This fixture uses a deterministic in-process transport. It opened no VDO signali
 | Offline private LAN adapter | Not implemented/qualified | Owned adapter/infrastructure and a separate network/security record |
 | Production identity/invitation/revocation | Not implemented | Backend identity/policy profile and security review |
 | Multi-controller BRSP arbitration | Not implemented | Explicit lease/ownership profile and conflict fixtures |
+
+## Native Meta Quest transfer pilot — host-built boundary
+
+The independent **Polar Remote Quest** pilot informed
+[16 — Native Meta Quest target and browser companion](16-native-meta-quest-integration.md).
+Its bounded status for this protocol record is **host-built pilot**, not an
+accepted tier-5 device result.
+
+The architecture includes a pure Kotlin BRSP target, native Spatial panel,
+closed capability manifest, separate VDO/BRSP secrets, controller-owned epoch,
+headset-local scope acceptance, packaged transport-only WebView, Android
+notification Stop surface, and Chromium companion. Whether that surface is an
+ordinary notification or an FGS backed by qualifying service-owned work remains
+an explicit Android gate. Those design facts do not
+substitute for an immutable end-to-end receipt.
+
+| Native Quest gate | Current record status | Required evidence |
+| --- | --- | --- |
+| Final public pilot commit and APK identity | Not recorded here | Clean commit, build inputs, APK SHA-256, signer, manifest/native-library/asset inspection |
+| Visible physical Quest command | Not recorded | Exact APK installed on exact Quest; controller proof, action ID, applied revision, sanitized state, native marker, visible effect |
+| Physical Android phone | Not tested | Named device/OS/Chrome, QR/Connect/Accept, portrait/landscape, lock/app-switch/network matrix |
+| VDO direct or relay route | Not tested | Independent selected-route/RTT readback at both endpoints |
+| Worn Polar H10 ECG | Not tested | Local Bluetooth permission, worn/wet/awake H10, connection, 130 Hz ECG mode, increasing real samples, remote start/stop |
+| Handshake/lifecycle/Android service conformance | Not accepted | Immediate hello with proof/ready withheld pending local Accept; Android plus VR/OpenXR interactivity; no deferred mutation; peer loss; `onSpatialShutdown`/destroy/process fail-close; FGS type backed by actual service-owned work or removed |
+| Command latency | Not measured for acceptance | Controller command-to-`applied` p50/p95/p99 bound to exact route/network/build |
+| Offline LAN | Not implemented/qualified | Owned adapter and WAN-disconnected physical browser/Quest receipt |
+
+Do not promote install/launch/process evidence into the visible-command row.
+Do not promote same-Wi-Fi VDO into offline LAN. Add a new immutable receipt when
+the exact candidate passes rather than editing these `not tested` cells into
+assumptions.
 
 ## Affect Tracker desktop/browser Party case study
 
@@ -171,6 +207,24 @@ For a native shell, also add:
 - typed IPC success, malformed, denied, revision conflict, and shutdown paths;
 - window close/hide/reopen, app quit, sleep/wake, and update/restart behavior;
 - proof that presentation-only remote scene data did not mutate privileged native state.
+
+For a native Meta Quest target, additionally record:
+
+- exact Quest model/Horizon OS, Meta Spatial SDK, Android target SDK, system
+  WebView, package, signer, and APK SHA-256;
+- headset-local notification/Bluetooth/pairing permission and scope approval;
+- Activity resume/pause plus VR/OpenXR ready/focus and declared HMD policy,
+  `onSpatialShutdown`, destroy/recreate, process death, local Stop, and
+  controller peer-loss behavior;
+- proof that target/controller hellos obey BRSP timing while target proof/ready
+  remain blocked until local Accept;
+- foreground-service type mapped to actual service-owned work, or evidence that
+  the notification-only design uses no FGS;
+- the exact remotely eligible/headset-only capability manifest and hash;
+- proof that the WebView bridge has no action/native-method surface and that
+  packaged VDO/BRSP bytes match their pins;
+- visible scene/panel effect plus native applied marker;
+- sensor readiness/sample evidence only when claiming a real hardware path.
 
 Playwright responsive/WebKit simulation remains browser evidence, not WKWebView/Tauri or physical iOS evidence.
 
