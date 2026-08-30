@@ -1,0 +1,13 @@
+@import url("./styles.css");
+
+/* Versioned app-shell shim: the mirrored Study 6 panel and fixed public pilot
+   controller must update as one coherent GitHub Pages release. */
+.remote-card,
+.feedback,
+.metric-value,
+.check-detail,
+.candidate-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}

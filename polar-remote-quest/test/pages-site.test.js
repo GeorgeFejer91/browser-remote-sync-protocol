@@ -22,6 +22,7 @@ import {
   CAPABILITY_MANIFEST,
   ECG_PREVIEW_PROFILE,
   EXPECTED_CAPABILITY_HASH,
+  RECORDING_NAME_PROFILE,
   REQUESTED_SCOPES,
   sanitizeRemoteState,
 } from "../src/profile.js";
@@ -73,17 +74,23 @@ test("persistence stores only the normalized public Beacon ID", () => {
   assert.equal(values.size, 0);
 });
 
-test("Pages profile pins the exact native ECG preview manifest and bounds", () => {
+test("Pages profile pins the exact native v3 manifest and sensitive projections", () => {
   assert.deepEqual(REQUESTED_SCOPES, [
-    "app.observe", "polar.ecg.observe", "polar.control", "panel.presentation.write", "session.safety",
+    "app.observe", "polar.ecg.observe", "polar.control", "recording.control",
+    "panel.presentation.write", "session.safety",
   ]);
-  assert.equal(CAPABILITY_MANIFEST.schemaVersion, 2);
-  assert.deepEqual(CAPABILITY_MANIFEST.stateProjections, [ECG_PREVIEW_PROFILE]);
+  assert.equal(CAPABILITY_MANIFEST.schemaVersion, 3);
+  assert.equal(CAPABILITY_MANIFEST.entries.length, 19);
+  assert.equal(
+    CAPABILITY_MANIFEST.entries.find(({ action }) => action === "start-recording").availabilityGuard,
+    "interactive-and-live-130hz-ecg",
+  );
+  assert.deepEqual(CAPABILITY_MANIFEST.stateProjections, [ECG_PREVIEW_PROFILE, RECORDING_NAME_PROFILE]);
   assert.equal(
     createHash("sha256").update(canonicalStringify(CAPABILITY_MANIFEST)).digest("hex"),
     EXPECTED_CAPABILITY_HASH,
   );
-  assert.equal(EXPECTED_CAPABILITY_HASH, "57a1c7aaf41abbcbb355c41c459e8b3d12bd62041296f3b1283021a246913f2a");
+  assert.equal(EXPECTED_CAPABILITY_HASH, "c893cc1d6959598d4a3d1cb882d938331c18416d75bfcb8417ff186de81eb074");
 
   const valid = { format: "normalized-int-v1", sampleRateHz: 65, values: [-1000, 0, 1000] };
   assert.deepEqual(sanitizeRemoteState({ ecgPreview: valid }), { ecgPreview: valid });
@@ -113,27 +120,41 @@ test("ECG preview requires its negotiated scope and survives reliable projection
   assert.equal(Object.hasOwn(controller.snapshot().state, "ecgPreview"), false);
 });
 
-test("GitHub Pages source keeps activation, approval, privacy, and path boundaries", async () => {
-  const [html, app, beacon, worker, workflow, styles, versionedStyles] = await Promise.all([
+test("GitHub Pages mirror keeps activation, approval, privacy, and shared-asset boundaries", async () => {
+  const [html, app, beacon, worker, workflow, styles, versionedStyles, diagnostic] = await Promise.all([
     readFile(join(root, "polar-remote-quest/index.html"), "utf8"),
-    readFile(join(root, "polar-remote-quest/src/app-fixed-v2.js"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/app-fixed-v4.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/beacon-fixed-v1.js"), "utf8"),
     readFile(join(root, "polar-remote-quest/sw.js"), "utf8"),
     readFile(join(root, ".github/workflows/pages.yml"), "utf8"),
     readFile(join(root, "polar-remote-quest/src/styles.css"), "utf8"),
-    readFile(join(root, "polar-remote-quest/src/styles-v3.css"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/styles-v4.css"), "utf8"),
+    readFile(join(root, "polar-remote-quest/src/diagnostic.js"), "utf8"),
   ]);
 
   assert.doesNotMatch(html, /id="beacon-id"|id="find-headset"|remember-beacon/u);
   assert.match(html, />Request full app control</u);
-  assert.match(html, /choose <strong>Accept<\/strong> or <strong>Reject<\/strong>/u);
-  assert.match(html, /fixed rendezvous channel/u);
-  assert.match(html, /id="ecg-chart"/u);
-  assert.doesNotMatch(html, /QR|transport-secret|pairing-secret|name="room"|name="session"/iu);
+  assert.match(html, /headset wearer must still accept the request/u);
+  assert.match(html, /Attended public pilot/u);
+  assert.match(html, /id="ecg-preview"/u);
+  for (const section of [
+    "LIVE ECG PREVIEW", "LIVE STATUS", "CONNECTION CHECKLIST",
+    "NEARBY POLAR H10 SENSORS", "TROUBLESHOOTING", "SENSOR CONTROLS",
+    "RECORDING", "REMOTE SESSION", "REFERENCE LAUNCH",
+  ]) assert.match(html, new RegExp(`>${section}<`, "u"));
+  for (const id of [
+    "rescan", "stop-scan", "refresh-status", "reconnect", "disconnect",
+    "connect-selected", "start-ecg", "stop-ecg", "restart-ecg",
+    "recording-name", "start-recording", "stop-recording", "panel-visible", "revoke",
+  ]) assert.match(html, new RegExp(`id=["']${id}["']`, "u"));
+  assert.doesNotMatch(html, /id="qr"|transport-secret|pairing-secret|name="room"|name="session"/iu);
   assert.doesNotMatch(html, /unsafe-eval|unsafe-inline|connect-src[^;]*\*/u);
   assert.match(html, /frame-ancestors 'none'/u);
   assert.match(html, /wss:\/\/wss\.vdo\.ninja https:\/\/turnservers\.vdo\.ninja/u);
   assert.match(html, /src="\.\.\/vendor\/vdoninja\/1\.5\.5\/vdoninja-sdk\.min\.js"/u);
+  assert.match(html, /src="\.\/src\/app-fixed-v4\.js"/u);
+  assert.match(html, /href="\.\/src\/styles-v4\.css"/u);
+  assert.doesNotMatch(html, /app-fixed-v[23]|styles-v3/u);
 
   assert.doesNotMatch(app, /localStorage|beaconForm|rememberBeacon|findButton/u);
   assert.match(app, /globalThis\.top === globalThis\.self/u);
@@ -141,16 +162,24 @@ test("GitHub Pages source keeps activation, approval, privacy, and path boundari
   assert.match(app, /if \(embeddedBlocked \|\| requestInFlight \|\| controller\.session\) return/u);
   assert.match(app, /Embedded control is disabled to prevent clickjacking/u);
   assert.match(app, /requestButton\.addEventListener\("click", async \(\) => \{[\s\S]*deriveBeaconInvitation\(PILOT_BEACON_ID\)[\s\S]*await controller\.connect\(invitation\)/u);
-  assert.match(app, /preview\?\.values/u, "the display must consume the native values field");
+  assert.match(app, /snapshot\.state\.ecgPreview/u, "the display must consume the bounded native preview field");
+  assert.match(app, /projectDiagnosticPanel/u);
+  assert.match(app, /renderCandidates\(diagnostic\.candidates, diagnostic\.selectedCandidateKey, diagnostic\.controls\.candidateSelection\)/u);
+  assert.match(app, /recordingName\.disabled = diagnostic\.recorder\?\.active === true/u);
+  assert.match(app, /targetSelectedCandidateKey !== targetCandidateKeySeen/u);
+  assert.doesNotMatch(app, /innerHTML|insertAdjacentHTML|eval\s*\(/u);
   assert.doesNotMatch(app, /ecgPreview\?\.samples/u);
   assert.doesNotMatch(app, /window\.location\.hash|URLSearchParams|sessionStorage/u);
   assert.doesNotMatch(beacon, /localStorage[\s\S]*(transportSecret|pairingSecret)/u);
   assert.match(worker, /fixed static allow-list/u);
+  assert.match(worker, /v9-mirror-v4/u);
   assert.match(worker, /requestUrl\.search/u);
   assert.doesNotMatch(worker, /localStorage|IndexedDB|pairingSecret|transportSecret/u);
-  assert.match(styles, /\.signal-badge\s*\{[^}]*max-width:\s*100%[^}]*overflow-wrap:\s*anywhere/su);
+  assert.match(styles, /\.metric-grid/u);
+  assert.match(styles, /\.candidate-option/u);
   assert.match(versionedStyles, /@import url\("\.\/styles\.css"\)/u);
-  assert.match(versionedStyles, /\.signal-badge\s*\{[^}]*max-width:\s*100%[^}]*overflow-wrap:\s*anywhere/su);
+  assert.match(versionedStyles, /overflow-wrap:\s*anywhere/u);
+  assert.match(diagnostic, /metrics\.length|const metrics/u);
 
   assert.match(workflow, /branches: \[main\]/u);
   assert.match(workflow, /actions\/checkout@v6/u);
@@ -172,10 +201,12 @@ test("Pages builder emits a coherent subpage without altering pinned source byte
     ".nojekyll",
     "index.html",
     "polar-remote-quest/index.html",
-    "polar-remote-quest/src/app-fixed-v2.js",
+    "polar-remote-quest/src/app-fixed-v4.js",
     "polar-remote-quest/src/beacon-fixed-v1.js",
     "polar-remote-quest/src/controller.js",
-    "polar-remote-quest/src/styles-v3.css",
+    "polar-remote-quest/src/diagnostic.js",
+    "polar-remote-quest/src/profile.js",
+    "polar-remote-quest/src/styles-v4.css",
     "polar-remote-quest/src/waveform.js",
     "src/brsp.js",
     "src/vdo-ninja-transport.js",

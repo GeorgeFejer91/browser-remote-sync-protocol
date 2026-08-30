@@ -10,12 +10,13 @@ const PAGE_FILES = [
   "icon.svg",
   "manifest.webmanifest",
   "sw.js",
-  "src/app-fixed-v2.js",
+  "src/app-fixed-v4.js",
   "src/beacon-fixed-v1.js",
   "src/controller.js",
+  "src/diagnostic.js",
   "src/profile.js",
   "src/styles.css",
-  "src/styles-v3.css",
+  "src/styles-v4.css",
   "src/waveform.js",
 ];
 

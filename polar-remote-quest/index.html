@@ -3,81 +3,147 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#071713">
-    <meta name="description" content="Typed browser remote and ECG activity view for Polar Remote Quest">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' wss://wss.vdo.ninja https://turnservers.vdo.ninja; media-src 'none'; worker-src 'self'; manifest-src 'self'; form-action 'none'; frame-ancestors 'none'">
+    <meta name="theme-color" content="#0d131b">
+    <meta name="description" content="Remote mirror of the Polar Remote Quest sensor bridge panel">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self' wss://wss.vdo.ninja https://turnservers.vdo.ninja; media-src 'none'; worker-src 'self'; manifest-src 'self'; form-action 'none'; frame-ancestors 'none'">
     <link rel="manifest" href="./manifest.webmanifest">
-    <link rel="stylesheet" href="./src/styles-v3.css">
-    <title>Polar Remote Quest Controller</title>
+    <link rel="stylesheet" href="./src/styles-v4.css">
+    <title>Study 6 · Sensor Bridge Remote</title>
   </head>
   <body>
-    <main>
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Polar Remote Quest · BRSP/1</p>
-          <h1>Headset control</h1>
-          <p class="hero-copy">Control the native Quest app and view its live, bounded ECG activity projection from a phone or laptop.</p>
-        </div>
-        <span class="mode-badge">Data-only WebRTC</span>
+    <main class="app-shell">
+      <header class="app-header">
+        <p class="eyebrow">Polar Remote Quest</p>
+        <h1>Study 6 · Sensor Bridge</h1>
+        <p>Polar H10 checks and durable ECG recording. This browser is a confirmed-state mirror of the headset panel.</p>
       </header>
 
-      <section class="pairing" aria-labelledby="pairing-heading">
-        <div class="section-heading">
-          <div>
-            <p class="step">Step 1</p>
-            <h2 id="pairing-heading">Connect to the pilot headset</h2>
+      <section class="section-block" aria-labelledby="remote-connection-heading">
+        <h2 id="remote-connection-heading">REMOTE CONNECTION</h2>
+        <div class="card remote-card">
+          <p class="card-title">Attended public pilot</p>
+          <p class="note"><strong>This fixed public pilot address needs no ID or QR scan.</strong> Request the typed sensor, recording, panel, and ECG-preview scopes. The headset wearer must still accept the request; browser access never includes Android, shell, Guardian, permissions, app launch, or arbitrary input.</p>
+          <div class="button-row">
+            <button id="request-control" type="button" class="primary">Request full app control</button>
+            <button id="stop" type="button" disabled>Stop browser connection</button>
           </div>
-          <span class="privacy-badge">Headset approval required</span>
-        </div>
-        <p class="note"><strong>This public pilot page uses one fixed rendezvous channel.</strong> No setup code or ID is required. Anyone opening this page may request every remotely eligible app scope, including the normalized ECG preview.</p>
-        <div class="button-row">
-          <button id="request-control" type="button">Request full app control</button>
-          <button id="stop" type="button" class="secondary" disabled>Stop</button>
-        </div>
-        <output id="connection-status" class="status" aria-live="polite">Idle — no network session is open.</output>
-        <p class="approval-copy">After requesting control, put on the headset and choose <strong>Accept</strong> or <strong>Reject</strong>. Accept grants the complete typed Polar/app catalog—not Android, shell, Guardian, permissions, or arbitrary input.</p>
-      </section>
-
-      <section aria-labelledby="authority-heading">
-        <div class="section-heading">
-          <div><p class="step">Step 2</p><h2 id="authority-heading">Connection authority</h2></div>
-        </div>
-        <dl class="status-grid">
-          <div><dt>Authentication</dt><dd id="authentication">Not connected</dd></div>
-          <div><dt>Granted scopes</dt><dd id="scopes">None</dd></div>
-          <div><dt>Route</dt><dd id="route">Unknown</dd></div>
-          <div><dt>Command latency</dt><dd id="latency">Not measured</dd></div>
-          <div><dt>State freshness</dt><dd id="freshness">No target state</dd></div>
-        </dl>
-      </section>
-
-      <section aria-labelledby="ecg-heading">
-        <div class="section-heading">
-          <div><p class="step">Live observation</p><h2 id="ecg-heading">ECG activity</h2></div>
-          <output id="ecg-status" class="signal-badge" aria-live="polite">Waiting for headset</output>
-        </div>
-        <p class="note">A newest-only, normalized activity preview is displayed when the headset locally grants the ECG observation scope. It is not stored and is not a diagnostic medical trace.</p>
-        <div class="chart-shell">
-          <canvas id="ecg-chart" width="720" height="220" role="img" aria-label="No ECG activity received"></canvas>
+          <output id="connection-status" class="feedback" aria-live="polite">Idle — no network session is open.</output>
+          <dl class="authority-grid">
+            <div><dt>Authentication</dt><dd id="authentication">Not connected</dd></div>
+            <div><dt>Granted scopes</dt><dd id="scopes">None</dd></div>
+            <div><dt>Route</dt><dd id="route">Unknown</dd></div>
+            <div><dt>Command latency</dt><dd id="latency">Not measured</dd></div>
+            <div><dt>State freshness</dt><dd id="freshness">No target state</dd></div>
+            <div><dt>Profile gate</dt><dd id="profile-gate">Not verified</dd></div>
+          </dl>
         </div>
       </section>
 
-      <section aria-labelledby="actions-heading">
-        <div class="section-heading"><div><p class="step">Step 3</p><h2 id="actions-heading">Typed commands</h2></div></div>
-        <p class="note">Every remotely eligible scope is requested by default. Controls unlock only after headset approval, mutual proof, scope grant, and target manifest verification. Every button waits for an acknowledged target result.</p>
-        <div id="commands" class="commands" aria-live="polite"></div>
-        <output id="command-status" class="status" aria-live="polite">No command pending.</output>
+      <section class="section-block" aria-labelledby="readiness-title">
+        <div id="readiness-card" class="card readiness-card" data-tone="muted">
+          <h2 id="readiness-title" class="readiness-title">Starting Polar acquisition</h2>
+          <p id="readiness-summary">Waiting for current sensor status…</p>
+          <p id="transport-status" class="mono note">Transport: Service not bound</p>
+        </div>
       </section>
 
-      <section aria-labelledby="state-heading">
-        <details>
-          <summary id="state-heading">Confirmed privacy-safe target state</summary>
-          <p class="note">Only fields in the compiled controller profile are rendered.</p>
-          <pre id="target-state">{}</pre>
-        </details>
+      <section class="section-block" aria-labelledby="ecg-heading">
+        <h2 id="ecg-heading">LIVE ECG PREVIEW</h2>
+        <div class="card waveform-card">
+          <canvas id="ecg-preview" width="720" height="210" role="img" aria-label="Normalized live Polar ECG activity waveform"></canvas>
+          <p class="note">Real PMD samples only. This normalized, replaceable browser preview is not a medical display and is never stored by this page.</p>
+          <output id="ecg-preview-status" class="feedback" aria-live="polite">Not connected.</output>
+        </div>
       </section>
+
+      <section class="section-block" aria-labelledby="status-heading">
+        <h2 id="status-heading">LIVE STATUS</h2>
+        <div id="metrics" class="card metric-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="section-block" aria-labelledby="checklist-heading">
+        <h2 id="checklist-heading">CONNECTION CHECKLIST</h2>
+        <div id="checklist" class="card checklist" aria-live="polite"></div>
+      </section>
+
+      <section class="section-block" aria-labelledby="candidates-heading">
+        <h2 id="candidates-heading">NEARBY POLAR H10 SENSORS</h2>
+        <div class="card">
+          <p id="candidate-status">No H10 candidates yet. Connect to the headset to see its sanitized scan results.</p>
+          <fieldset id="candidates" class="candidate-list">
+            <legend class="visually-hidden">Choose a sanitized Polar H10 candidate</legend>
+          </fieldset>
+          <button id="connect-selected" type="button" disabled>Connect selected H10</button>
+        </div>
+      </section>
+
+      <section class="section-block" aria-labelledby="troubleshooting-heading">
+        <h2 id="troubleshooting-heading">TROUBLESHOOTING</h2>
+        <div class="card warning-card">
+          <ol id="troubleshooting-list"><li>Wait for a confirmed headset status, then select Refresh status.</li></ol>
+        </div>
+      </section>
+
+      <section class="section-block" aria-labelledby="controls-heading">
+        <h2 id="controls-heading">SENSOR CONTROLS</h2>
+        <div class="control-grid">
+          <button id="grant-permission" type="button" disabled>Grant Nearby devices · headset only</button>
+          <button id="rescan" type="button" disabled>Rescan nearby H10</button>
+          <button id="stop-scan" type="button" disabled>Stop scan</button>
+          <button id="refresh-status" type="button" disabled>Refresh status</button>
+          <button id="reconnect" type="button" disabled>Reconnect H10</button>
+          <button id="disconnect" type="button" disabled>Disconnect H10</button>
+          <button id="start-ecg" type="button" disabled>Start ECG</button>
+          <button id="stop-ecg" type="button" disabled>Stop ECG</button>
+          <button id="restart-ecg" type="button" disabled>Restart ECG stream</button>
+        </div>
+        <p class="note">Nearby-device permission approval is intentionally available only inside the headset. Sensor controls use typed app actions and never simulate taps.</p>
+        <output id="control-status" class="feedback" aria-live="polite">No sensor command pending.</output>
+      </section>
+
+      <section class="section-block" aria-labelledby="recording-heading">
+        <h2 id="recording-heading">RECORDING</h2>
+        <div class="card recording-card">
+          <label for="recording-name">Recording name</label>
+          <input id="recording-name" type="text" inputmode="text" minlength="1" maxlength="64" pattern="[A-Za-z0-9._-]{1,64}" autocomplete="off" spellcheck="false" placeholder="study6_session-01">
+          <p class="note">1–64 letters, numbers, dots, underscores, or hyphens. The browser sends only the name; ECG data stays app-private on the headset.</p>
+          <div class="button-row">
+            <button id="start-recording" type="button" disabled>Start named recording</button>
+            <button id="stop-recording" type="button" disabled>Stop recording</button>
+          </div>
+          <output id="recorder-status" class="feedback" aria-live="polite">Recorder status unavailable.</output>
+        </div>
+      </section>
+
+      <section class="section-block" aria-labelledby="session-heading">
+        <h2 id="session-heading">REMOTE SESSION</h2>
+        <div class="card">
+          <div class="button-row">
+            <button id="panel-visible" type="button" disabled>Show headset panel</button>
+            <button id="revoke" type="button" class="danger" disabled>Revoke remote session</button>
+          </div>
+          <output id="command-status" class="feedback" aria-live="polite">No remote-session command pending.</output>
+        </div>
+      </section>
+
+      <section class="section-block" aria-labelledby="reference-launch-heading">
+        <h2 id="reference-launch-heading">REFERENCE LAUNCH</h2>
+        <div class="card">
+          <p>Operator companion: this browser page</p>
+          <p>Study 6 WebXR: configured and launched only from the headset panel.</p>
+          <div class="button-row">
+            <button type="button" disabled>Operator companion · already open</button>
+            <button type="button" disabled>Open Study 6 WebXR · headset only</button>
+          </div>
+        </div>
+      </section>
+
+      <details class="technical-state">
+        <summary>Confirmed privacy-safe target state</summary>
+        <pre id="target-state">{}</pre>
+      </details>
     </main>
     <script src="../vendor/vdoninja/1.5.5/vdoninja-sdk.min.js" defer></script>
-    <script type="module" src="./src/app-fixed-v2.js"></script>
+    <script type="module" src="./src/app-fixed-v4.js"></script>
   </body>
 </html>

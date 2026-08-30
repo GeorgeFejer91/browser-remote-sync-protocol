@@ -1,15 +1,16 @@
 const STATIC_CACHE_PREFIX = "polar-remote-pages-static-";
-const STATIC_CACHE = `${STATIC_CACHE_PREFIX}v6`;
+const STATIC_CACHE = `${STATIC_CACHE_PREFIX}v9-mirror-v4`;
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icon.svg",
   "./src/styles.css",
-  "./src/styles-v3.css",
-  "./src/app-fixed-v2.js",
+  "./src/styles-v4.css",
+  "./src/app-fixed-v4.js",
   "./src/beacon-fixed-v1.js",
   "./src/controller.js",
+  "./src/diagnostic.js",
   "./src/profile.js",
   "./src/waveform.js",
   "../src/brsp.js",

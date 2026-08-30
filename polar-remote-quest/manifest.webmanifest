@@ -1,13 +1,11 @@
 {
-  "name": "Polar Remote Quest Controller",
+  "name": "Polar Remote Quest",
   "short_name": "Polar Remote",
-  "description": "Typed browser controller and ECG activity view for Polar Remote Quest.",
-  "id": "./",
+  "description": "Remote mirror of the Polar Remote Quest sensor bridge panel.",
   "start_url": "./",
-  "scope": "./",
   "display": "standalone",
-  "background_color": "#071713",
-  "theme_color": "#071713",
+  "background_color": "#0d131b",
+  "theme_color": "#0d131b",
   "icons": [
     {
       "src": "./icon.svg",

@@ -6,6 +6,7 @@ import {
   ECG_PREVIEW_PROFILE,
   EXPECTED_CAPABILITY_HASH,
   REQUESTED_SCOPES,
+  redactStateForScopes,
   sanitizeRemoteState,
 } from "./profile.js";
 
@@ -84,6 +85,8 @@ export class PolarRemoteController extends EventTarget {
       transport,
       role: "controller",
       sessionId,
+      // BRSPConnection generates this endpoint's fresh local epoch. The stable
+      // public Beacon ID never selects controller replay state.
       sharedSecret: pairingSecret,
       capabilities: CAPABILITIES,
       requestedScopes: REQUESTED_SCOPES,
@@ -118,6 +121,9 @@ export class PolarRemoteController extends EventTarget {
         }
         if (!this.manifestVerified) this.emit("error", { message: "Target capability manifest does not match this controller profile." });
       }
+      // Applied responses carry the target-confirmed projection. Consuming it
+      // immediately keeps expectedRevision correct even before the next
+      // replaceable state update arrives.
       if (applied.result && typeof applied.result === "object") {
         this.acceptConfirmed({ revision: applied.revision, state: applied.result });
       }
@@ -137,8 +143,8 @@ export class PolarRemoteController extends EventTarget {
 
   acceptConfirmed({ revision, state }, { replaceEcgPreview = false } = {}) {
     if (!Number.isSafeInteger(revision) || revision < this.confirmed.revision) return;
-    const sanitized = sanitizeRemoteState(state);
     const acceptedScopes = this.session?.snapshot().acceptedScopes ?? [];
+    const sanitized = redactStateForScopes(sanitizeRemoteState(state), acceptedScopes);
     const previewScoped = acceptedScopes.includes(ECG_PREVIEW_PROFILE.requiredScope);
     if (!previewScoped) {
       delete sanitized.ecgPreview;
