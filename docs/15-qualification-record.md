@@ -42,7 +42,7 @@ The candidate was checked with:
 npm run check
 ```
 
-Recorded local result on 2026-08-30: `npm run check` **passed** the repository contract/hash/link checks and all **41/41** Node tests, with zero failures, skips, cancellations, or todos. `npm run check` invokes `node --test`, so this receipt does not pretend a redundant separately captured `npm test` run occurred.
+Recorded local result on 2026-08-30: `npm run check` **passed** the repository contract/hash/link checks and all **48/48** Node tests, with zero failures, skips, cancellations, or todos. `npm run check` invokes `node --test`, so this receipt does not pretend a redundant separately captured `npm test` run occurred.
 
 The suite covers, at minimum:
 
@@ -64,7 +64,7 @@ The suite covers, at minimum:
   reliable backpressure fail-close, producer-first Stop, and static
   Kotlin/Android authority boundaries.
 
-The final CI run for the publication commit remains the immutable remote confirmation. The local 41/41 result applies to this candidate tree and must not be copied forward after code, tests, pinned SDK, application profile, or native integration fragment changes.
+The final CI run for the publication commit remains the immutable remote confirmation. The local 48/48 result applies to this candidate tree and must not be copied forward after code, tests, pinned SDK, application profile, native integration fragment, or hosted companion changes.
 
 ### Browser smoke evidence
 
@@ -109,20 +109,21 @@ Its bounded status for this protocol record is **host-built pilot**, not an
 accepted tier-5 device result.
 
 The architecture includes a pure Kotlin BRSP target, native Spatial panel,
-closed capability manifest, separate VDO/BRSP secrets, controller-owned epoch,
-headset-local scope acceptance, packaged transport-only WebView, Android
-notification Stop surface, and Chromium companion. Whether that surface is an
-ordinary notification or an FGS backed by qualifying service-owned work remains
-an explicit Android gate. Those design facts do not
+closed capability manifest, an explicitly named public-beacon/local-approval
+profile, controller-owned epoch, headset-local scope acceptance, packaged
+transport-only WebView, Android notification Stop surface, a separately scoped
+bounded ECG activity projection, and Chromium companion. Whether that surface
+is an ordinary notification or an FGS backed by qualifying service-owned work
+remains an explicit Android gate. Those design facts do not
 substitute for an immutable end-to-end receipt.
 
 | Native Quest gate | Current record status | Required evidence |
 | --- | --- | --- |
 | Final public pilot commit and APK identity | Not recorded here | Clean commit, build inputs, APK SHA-256, signer, manifest/native-library/asset inspection |
 | Visible physical Quest command | Not recorded | Exact APK installed on exact Quest; controller proof, action ID, applied revision, sanitized state, native marker, visible effect |
-| Physical Android phone | Not tested | Named device/OS/Chrome, QR/Connect/Accept, portrait/landscape, lock/app-switch/network matrix |
+| Physical Android phone | Not tested | Named device/OS/Chrome, Beacon Find/Request/Accept, portrait/landscape, lock/app-switch/network matrix |
 | VDO direct or relay route | Not tested | Independent selected-route/RTT readback at both endpoints |
-| Worn Polar H10 ECG | Not tested | Local Bluetooth permission, worn/wet/awake H10, connection, 130 Hz ECG mode, increasing real samples, remote start/stop |
+| Worn Polar H10 ECG | Not tested | Local Bluetooth permission, worn/wet/awake H10, connection, 130 Hz ECG mode, increasing real samples, remote start/stop, separately granted 65-point normalized browser preview |
 | Handshake/lifecycle/Android service conformance | Not accepted | Immediate hello with proof/ready withheld pending local Accept; Android plus VR/OpenXR interactivity; no deferred mutation; peer loss; `onSpatialShutdown`/destroy/process fail-close; FGS type backed by actual service-owned work or removed |
 | Command latency | Not measured for acceptance | Controller command-to-`applied` p50/p95/p99 bound to exact route/network/build |
 | Offline LAN | Not implemented/qualified | Owned adapter and WAN-disconnected physical browser/Quest receipt |

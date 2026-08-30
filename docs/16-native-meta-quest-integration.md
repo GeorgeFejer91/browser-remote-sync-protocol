@@ -419,6 +419,91 @@ Use `SystemClock.elapsedRealtime()` or an equivalent monotonic clock. Handler
 callbacks are scheduling conveniences, not deadline authority after headset
 sleep.
 
+## Optional public-beacon profile: permanent address, local approval
+
+The Polar Remote Quest pilot also demonstrates a deliberately weaker discovery
+profile for a lab operator who cannot scan a QR shown inside VR. It replaces the
+one-time four-field transfer with one stable **public Beacon ID** while retaining
+headset-local authorization for every controller session.
+
+This is not the default BRSP trust model. The Beacon ID and every value derived
+from it are public addressing/binding material. Anyone who knows the ID can
+reach the room and form the role-bound proof. That proof binds the BRSP
+transcript to the selected Beacon ID; it does **not** identify or authorize the
+person. The wearer pressing **Accept** for the displayed controller and exact
+scopes is the only application-authorization boundary.
+
+The pilot profile is fixed as follows:
+
+| Item | Rule |
+| --- | --- |
+| Beacon ID | 12 random bytes generated once per app install, stored privately by the app, displayed as six groups of four hexadecimal characters |
+| Normalization | Remove spaces/hyphens, lowercase, require exactly 24 hex characters |
+| VDO room | `prq_` plus the normalized Beacon ID |
+| BRSP session ID | `prq.session.` plus the normalized Beacon ID |
+| Transport binding | base64url(SHA-256(UTF-8(`polar-remote-quest/v1/transport\n` + ID))) |
+| BRSP proof binding | base64url(SHA-256(UTF-8(`polar-remote-quest/v1/brsp\n` + ID))) |
+| Browser persistence | The normalized public Beacon ID only; never controller state, derived fields, proofs, epochs, or participant/sensor data |
+| Activation | No network session at page load. The browser requires Find then Request control; the target requires Allow external controllers |
+| Authorization | One pending controller; headset displays controller ID and requested scopes; Accept or Reject is local-only |
+| Replacement | Reject, peer loss, Stop, expiry, or transport failure revokes authority and creates a fresh target ID, epoch, nonce, and transport generation behind the same Beacon ID |
+
+Native derivation:
+
+```kotlin
+private fun binding(label: String, normalizedBeaconId: String): String =
+  Base64.getUrlEncoder().withoutPadding().encodeToString(
+    MessageDigest.getInstance("SHA-256").digest(
+      ("$label\n$normalizedBeaconId").toByteArray(StandardCharsets.UTF_8)
+    )
+  )
+
+val room = "prq_$normalizedBeaconId"
+val session = "prq.session.$normalizedBeaconId"
+val transportBinding = binding("polar-remote-quest/v1/transport", normalizedBeaconId)
+val brspBinding = binding("polar-remote-quest/v1/brsp", normalizedBeaconId)
+```
+
+Browser derivation:
+
+```js
+async function binding(label, id) {
+  const bytes = new TextEncoder().encode(`${label}\n${id}`);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return btoa(String.fromCharCode(...digest))
+    .replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+}
+
+const room = `prq_${id}`;
+const session = `prq.session.${id}`;
+```
+
+The target still emits its hello immediately after the lanes open, but it
+withholds target proof, ready, application commands, and scoped state until
+local Accept. Accept freezes only the intersection of the predeclared locally
+grantable set and the exact controller request. Reject closes that peer and
+rearms the same public address with fresh endpoint-local replay state.
+
+Because the binding is derived from public material, this profile gives up the
+normal separation between the VDO transport holder and the BRSP proof holder.
+A malicious party who learns the Beacon ID can occupy or repeatedly request the
+one-controller slot, and a compromised transport WebView can derive the same
+binding. Rate limits, one-controller admission, a short pending-request window,
+fresh epochs, and local Reject reduce abuse but do not create identity. Use an
+account-backed one-time invitation or a reviewed PAKE/ephemeral-key bootstrap
+when controller identity, unattended access, or denial-of-service resistance is
+a product requirement.
+
+The reference subpage implementing this profile is:
+
+```text
+https://georgefejer91.github.io/browser-remote-sync-protocol/polar-remote-quest/
+```
+
+It is a static PWA. GitHub Pages hosts only controller assets; VDO.Ninja still
+provides Internet signaling/ICE, and application commands remain on encrypted
+WebRTC data channels. This is not a WAN-disconnected offline-LAN design.
+
 ## Local approval before target proof
 
 BRSP/1 requires both endpoints to send `hello` immediately after both lanes
@@ -905,7 +990,7 @@ Keep evidence cumulative and claim-specific:
 | Browser deterministic | real browser modules/Web Crypto, invitation parser, profile/manifest gate, controller lifecycle | Public signaling, ICE route, physical phone |
 | Attended VDO | exact build, target/controller proof, command/applied/state, route readback, Stop | Quest runtime unless target is installed APK |
 | Physical Quest + desktop browser | installed APK hash, visible spatial effect, native marker, lifecycle, route | Physical-phone touch/lifecycle; H10 unless present |
-| Physical Quest + Android phone | QR/Connect/Accept, touch/orientation/lock/network cases, commands and state | iOS or unlisted devices |
+| Physical Quest + Android phone | Selected one-time invitation or Beacon Find/Request/Accept, touch/orientation/lock/network cases, commands and state | iOS or unlisted devices |
 | Physical Quest + worn H10 | device-local permission, discovery/connect, 130 Hz ECG readiness and increasing real samples, remote start/stop | Other sensors/firmware/environments |
 | Offline LAN | WAN disconnected, owned adapter, authenticated pairing, browser permission, observed route and latency | Internet/VDO service behavior |
 
@@ -963,9 +1048,10 @@ participant/sensor data.
 The independent **Polar Remote Quest** pilot informed this chapter. Its current
 implementation shape includes a pure Kotlin target core, a native Meta Spatial
 panel, Polar H10 adapter, packaged transport-only WebView, Chromium companion,
-closed 13-entry action manifest, separate 256-bit transport/pairing secrets,
+closed 13-entry action manifest, optional public-beacon/local-approval profile,
 controller-owned epoch, local scope approval, elapsed deadlines, foreground
-Stop notification, and deterministic/APK host gates.
+Stop notification, a separately scoped bounded ECG activity projection, and
+deterministic/APK host gates.
 
 The pilot's current notification-only foreground-service shape is not a
 completed Android `connectedDevice` qualification: before release it must
@@ -1000,8 +1086,10 @@ row rather than rewriting host evidence into a physical-device claim.
 4. Implement pure Kotlin BRSP parsing, canonical proof, session, deadlines,
    dedupe, revisions, and manifest tests.
 5. Prove JavaScript/Kotlin canonical and HMAC fixtures byte for byte.
-6. Add local Enable, four-field QR/manual invitation, requested-scope display,
-   Accept, Stop, and expiry.
+6. Add local Enable, requested-scope display, Accept/Reject, Stop, and expiry.
+   Choose either the default four-field one-time invitation or the explicitly
+   documented public-beacon/local-approval profile; do not blur their trust
+   claims.
 7. Add the packaged transport-only adapter with separate VDO secret,
    generation fencing, bounded bridge, and fail-closed peer close.
 8. Add the browser companion with manifest/hash gate and confirmed-state UI.
@@ -1032,7 +1120,7 @@ Availability/background guards:
 Capability manifest version and canonical SHA-256:
 Sanitized state fields:
 Native effects and stable error registry:
-Pairing origin and four-field fragment policy:
+Pairing/discovery profile, origin, and transfer policy:
 Invitation / idle / absolute elapsed deadlines:
 Transport secret owner:
 BRSP pairing secret owner:

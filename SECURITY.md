@@ -39,6 +39,17 @@ ownership or a reviewed per-frame MAC extension. Keep grants narrow and short,
 make local Stop immediately revoke native authority, and state this residual
 risk explicitly.
 
+The hosted Polar Remote Quest companion is a deliberately named
+**public-beacon/local-approval profile**, not the default secret-invitation
+profile above. Its stable 96-bit Beacon ID deterministically derives discovery
+and transcript-binding values, so anyone who knows that public ID can form a
+valid controller request. The proof binds the request to the Beacon ID and
+transcript; it does not authenticate a person. The Quest must show the exact
+requested scopes and withhold proof, ready, commands, and sensitive state until
+the wearer presses Accept for that request. Do not transplant this profile into
+a production identity boundary without an account-backed one-time invitation,
+reviewed PAKE, or equivalent authenticated bootstrap.
+
 See [the native Meta Quest integration guide](docs/16-native-meta-quest-integration.md)
 for the complete boundary and qualification matrix.
 

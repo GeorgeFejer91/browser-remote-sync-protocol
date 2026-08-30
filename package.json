@@ -5,6 +5,7 @@
   "description": "A transport-neutral browser remote-control and live-state synchronization protocol with a VDO.Ninja data-channel adapter.",
   "type": "module",
   "scripts": {
+    "build:pages": "node scripts/build-pages.mjs",
     "test": "node --test",
     "check": "node scripts/check-repository.mjs && node --test",
     "serve": "node scripts/serve.mjs"

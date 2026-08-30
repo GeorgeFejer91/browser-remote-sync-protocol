@@ -127,8 +127,14 @@ Chromium companion. Its architecture contributed these reusable lessons:
 
 - inventory every local action exactly once as remotely eligible or
   headset-only and hash the canonical capability manifest;
-- keep controller epoch/nonce local to the controller and limit the QR to room,
-  session, transport secret, and pairing secret;
+- keep controller epoch/nonce local to the controller and, for the default
+  profile, limit the QR to room, session, transport secret, and pairing secret;
+- when a lab workflow cannot scan a VR QR, name the permanent Beacon ID as a
+  public discovery/local-approval profile: it improves ergonomics but does not
+  authenticate a person, and headset Accept remains the sole grant boundary;
+- keep a browser ECG view bounded, newest-only, normalized, separately scoped,
+  revision-independent, and explicitly non-medical; never send raw/full-rate
+  ECG through the companion state projection;
 - separate the WebView's VDO secret from Kotlin's BRSP proof key;
 - queue WebView ingress onto one native owner thread with bounded admission and
   generation-fence every asynchronous transport callback;
