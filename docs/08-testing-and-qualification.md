@@ -48,6 +48,7 @@ The Node test suite uses paired in-memory lanes so it can deterministically cove
 | Authentication | Matching secrets prove both roles; a wrong secret cannot reach `ready`. |
 | Negotiation | Capabilities and scopes are the exact independent intersection. |
 | Authority | Controller command produces target application, a fresh ordered `applied`, and returned target-owned state; duplicate command IDs reuse the cached result without reusing an old envelope sequence. |
+| Application adaptation | Two independent target profiles derive narrow callbacks/scopes, exclude private state, preserve state-machine rejection, and suppress obsolete asynchronous intent commits. |
 | Intent | Negotiated smartphone intent reaches only the target reducer and converges through returned state. |
 | Freshness | Controller state age begins at ready, is updated only by accepted authoritative state, and remains evaluable after an explicit disconnect. |
 | Backpressure | Replaceable state/intent retains the newest pending value instead of accumulating history. |

@@ -12,6 +12,7 @@ The first adapter uses VDO.Ninja's **data-only WebRTC path**. No camera or micro
 
 - A normative [BRSP/1 wire and handshake specification](docs/03-protocol-specification.md).
 - A reusable [transport-neutral JavaScript implementation](src/brsp.js).
+- A thin [application target authority adapter](src/application-target.js) with [two independent model integrations](examples/application-integration/README.md).
 - A pinned [VDO.Ninja SDK 1.5.5 adapter](src/vdo-ninja-transport.js) with no media capture.
 - A [runnable two-browser example](examples/two-browser-demo/index.html) in which a controller changes a target-owned scene and both screens converge on the target's returned state.
 - A copyable [application-integration starter](examples/application-integration/README.md) with exact reducers, smartphone intent, a target-enforced dead-man lease, explicit lifecycle, and deterministic tests.
@@ -128,14 +129,15 @@ Read in order for the full transfer guide:
 11. [Sources and provenance](docs/10-sources-and-provenance.md)
 12. [Marionette smartphone companion profile](docs/11-marionette-companion-profile.md)
 13. [Copyable application integration recipes](docs/12-app-integration-recipes.md)
-14. [Native-shell WebView and external browser](docs/13-native-shell-webview-integration.md)
-15. [Deployment, network inventory, and CSP](docs/14-deployment-network-and-csp.md)
-16. [Qualification tiers and current record](docs/15-qualification-record.md)
-17. [Native Meta Quest target and browser companion](docs/16-native-meta-quest-integration.md)
+14. [Application target reference architecture](docs/12-application-target-reference-architecture.md)
+15. [Native-shell WebView and external browser](docs/13-native-shell-webview-integration.md)
+16. [Deployment, network inventory, and CSP](docs/14-deployment-network-and-csp.md)
+17. [Qualification tiers and current record](docs/15-qualification-record.md)
+18. [Native Meta Quest target and browser companion](docs/16-native-meta-quest-integration.md)
 
 ## Status and provenance
 
-BRSP/1 is a pre-1.0 reference protocol. Automated tests cover encoding, bounds, unsigned sequencing, mutual proof, scope negotiation, command acknowledgement and dedupe, authoritative state/freshness, negotiated smartphone live intent, exact application validation, target leases, explicit selection, VDO data-only activation, delivery modes, newest-only backpressure, and teardown. A deterministic [browser smoke fixture](qualification/README.md) exercises the real ES modules and Web Crypto without contacting signaling. The [current qualification record](docs/15-qualification-record.md) states the higher network, physical-device, and native-shell gates that remain open. The security limitations in [SECURITY.md](SECURITY.md) apply.
+BRSP/1 is a pre-1.0 reference protocol. Automated tests cover encoding, bounds, unsigned sequencing, mutual proof, scope negotiation, command acknowledgement and dedupe, authoritative state/freshness, negotiated smartphone live intent, exact application validation, application-target adaptation, private-state projection, stale asynchronous intent suppression, target leases, explicit selection, VDO data-only activation, delivery modes, newest-only backpressure, and teardown. A deterministic [browser smoke fixture](qualification/README.md) exercises the real ES modules and Web Crypto without contacting signaling. The [current qualification record](docs/15-qualification-record.md) states the higher network, physical-device, and native-shell gates that remain open. The security limitations in [SECURITY.md](SECURITY.md) apply.
 
 The native Quest chapter records a reusable architecture and host-built pilot
 boundary. It does not by itself claim a physical Quest/browser command, a
