@@ -5,6 +5,7 @@ import { dirname, extname, join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
 const required = [
+  ".gitattributes",
   "README.md",
   "docs/00-overview.md",
   "docs/01-architecture.md",
@@ -18,7 +19,12 @@ const required = [
   "docs/09-roadmap.md",
   "docs/10-sources-and-provenance.md",
   "docs/11-marionette-companion-profile.md",
+  "docs/12-application-target-reference-architecture.md",
+  "examples/application-integration/README.md",
+  "examples/application-integration/affect-target.js",
+  "examples/application-integration/runner-target.js",
   "examples/two-browser-demo/index.html",
+  "src/application-target.js",
   "src/brsp.js",
   "src/vdo-ninja-transport.js",
 ];
@@ -40,6 +46,23 @@ assert.match(source, /audio:\s*false[\s\S]*video:\s*false/, "Controller must req
 assert.match(source, /ordered:\s*false,\s*maxRetransmits:\s*0/, "State lane must be unordered with zero retransmits.");
 assert.doesNotMatch(source, /getUserMedia|captureStream/, "Reference transport must not capture media.");
 assert.doesNotMatch(source, /new\s+WebSocket/, "Reference adapter must not bypass the VDO.Ninja SDK signaling API.");
+
+const applicationTarget = readFileSync(join(root, "src/application-target.js"), "utf8");
+assert.match(applicationTarget, /class BRSPApplicationTarget/, "Application target authority adapter must remain available.");
+assert.match(applicationTarget, /connectionOptions\(\{ grantedScopes/, "Application scope grants must remain explicit per connection.");
+assert.doesNotMatch(
+  applicationTarget,
+  /VDONinja|RTCPeerConnection|new\s+WebSocket|getUserMedia|captureStream|document\.|window\./,
+  "Application target authority must remain transport, media, and DOM independent.",
+);
+const modelAdapters = ["affect-target.js", "runner-target.js"]
+  .map((name) => readFileSync(join(root, "examples/application-integration", name), "utf8"))
+  .join("\n");
+assert.doesNotMatch(
+  modelAdapters,
+  /vdo-ninja-transport|VDONinja|RTCPeerConnection|WebSocket|document\.|window\.|node:fs|child_process/,
+  "Application model adapters must contain domain semantics, not transport, DOM, filesystem, or process behavior.",
+);
 
 const html = readFileSync(join(root, "examples/two-browser-demo/index.html"), "utf8");
 assert.match(html, /vendor\/vdoninja\/1\.5\.5\/vdoninja-sdk\.min\.js/, "Demo must load the pinned local SDK.");

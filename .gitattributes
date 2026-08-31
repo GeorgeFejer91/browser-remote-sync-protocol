@@ -1,0 +1,5 @@
+# Vendored provenance files have pinned raw-byte hashes. Keep their upstream LF
+# bytes in every worktree even when a developer has core.autocrlf=true.
+vendor/vdoninja/1.5.5/vdoninja-sdk.min.js -text
+vendor/vdoninja/1.5.5/vdoninja-sdk.js -text
+vendor/vdoninja/1.5.5/LICENSE-MPL-2.0.txt -text

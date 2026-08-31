@@ -64,6 +64,16 @@ function applySceneCommand(current, command) {
 
 Do not make the network handler mutate DOM elements and then read the DOM back as state. Keep one typed application authority and render from it.
 
+The optional [`BRSPApplicationTarget`](../src/application-target.js) reference
+adapter implements this seam for JavaScript targets: it registers exact
+scope/action reducers, owns the application revision, derives the callbacks
+passed to `BRSPConnection`, and projects a copied public state. The
+[application target reference architecture](12-application-target-reference-architecture.md)
+shows Affect-style and experiment-Runner-style consumers. Native applications
+should reproduce the same authority boundary in their native runtime rather
+than treating the JavaScript model as a reason to move native state into a
+WebView.
+
 ## Step 3 — Separate three state domains
 
 Create different variables/types for:

@@ -45,6 +45,7 @@ The Node test suite uses paired in-memory lanes so it can deterministically cove
 | Authentication | Matching secrets prove both roles; a wrong secret cannot reach `ready`. |
 | Negotiation | Capabilities and scopes are the exact independent intersection. |
 | Authority | Controller command produces target application, `applied`, and returned target-owned state. |
+| Application adaptation | Two independent target profiles derive narrow callbacks/scopes, exclude private state, preserve state-machine rejection, and suppress obsolete asynchronous intent commits. |
 | Intent | Negotiated smartphone intent reaches only the target reducer and converges through returned state. |
 | Backpressure | Replaceable state/intent retains the newest pending value instead of accumulating history. |
 | Activation | Constructing the VDO adapter does not construct/start the SDK. |

@@ -31,6 +31,10 @@ Adopted facts and constraints:
 
 The repository pins local SDK 1.5.5 for reproducibility. Current upstream documentation may describe newer behavior; updating the pin requires review, hash update, automated checks, and real route qualification.
 
+The three pinned provenance paths are marked `-text` in `.gitattributes`.
+This prevents `core.autocrlf` from changing their raw upstream bytes in a
+Windows worktree and keeps the runtime files equal to their recorded hashes.
+
 ### Data-only guide
 
 - [Generic P2P data transmission guide](https://docs.vdo.ninja/guides/iframe-api-documentation/generic-p2p-data-transmission-guide)

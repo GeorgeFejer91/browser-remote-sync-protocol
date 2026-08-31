@@ -12,6 +12,7 @@ The first adapter uses VDO.Ninja's **data-only WebRTC path**. No camera or micro
 
 - A normative [BRSP/1 wire and handshake specification](docs/03-protocol-specification.md).
 - A reusable [transport-neutral JavaScript implementation](src/brsp.js).
+- A thin [application target authority adapter](src/application-target.js) with [two independent model integrations](examples/application-integration/README.md).
 - A pinned [VDO.Ninja SDK 1.5.5 adapter](src/vdo-ninja-transport.js) with no media capture.
 - A [runnable two-browser example](examples/two-browser-demo/index.html) in which a controller changes a target-owned scene and both screens converge on the target's returned state.
 - A dedicated [Marionette smartphone companion profile](docs/11-marionette-companion-profile.md) for fast touch controls, target leases, QR pairing, phone lifecycle, accessibility, and local-only pan/pinch perspective.
@@ -103,10 +104,11 @@ Read in order for the full transfer guide:
 10. [Roadmap](docs/09-roadmap.md)
 11. [Sources and provenance](docs/10-sources-and-provenance.md)
 12. [Marionette smartphone companion profile](docs/11-marionette-companion-profile.md)
+13. [Application target reference architecture](docs/12-application-target-reference-architecture.md)
 
 ## Status and provenance
 
-BRSP/1 is a pre-1.0 reference protocol. Automated tests cover encoding, bounds, unsigned sequencing, mutual proof, scope negotiation, command acknowledgement, authoritative state convergence, negotiated smartphone live intent, failure on a wrong secret, VDO data-only activation, delivery modes, and newest-only backpressure. The security limitations in [SECURITY.md](SECURITY.md) apply.
+BRSP/1 is a pre-1.0 reference protocol. Automated tests cover encoding, bounds, unsigned sequencing, mutual proof, scope negotiation, command acknowledgement, authoritative state convergence, negotiated smartphone live intent, application-target adaptation, private-state projection, stale asynchronous intent suppression, failure on a wrong secret, VDO data-only activation, delivery modes, and newest-only backpressure. The security limitations in [SECURITY.md](SECURITY.md) apply.
 
 The design is derived from the public Affect Tracker implementation and its attended VDO.Ninja qualification evidence, then generalized into a transport-neutral protocol. The exact source versions, standards, service documentation, measured findings, and code-reuse status are recorded in [the source ledger](docs/10-sources-and-provenance.md).
 
