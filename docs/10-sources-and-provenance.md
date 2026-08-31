@@ -33,6 +33,10 @@ Adopted facts and constraints:
 
 The repository pins local SDK 1.5.5 for reproducibility. Current upstream documentation may describe newer behavior; updating the pin requires review, hash update, automated checks, and real route qualification.
 
+The three pinned provenance paths are marked `-text` in `.gitattributes`.
+This prevents `core.autocrlf` from changing their raw upstream bytes in a
+Windows worktree and keeps the runtime files equal to their recorded hashes.
+
 The deployment inventory in [14 — Deployment, network, and CSP](14-deployment-network-and-csp.md) was also verified against the readable pinned source. For the normal repository/Tauri origins, that source defaults to:
 
 - signaling at `wss://wss.vdo.ninja`;

@@ -18,7 +18,7 @@ Runnable browser artifacts live under [`qualification/`](../qualification/README
 
 Every result records the lowest tier that directly exercises the claim. A higher tier supplements rather than erases deterministic lower-tier tests.
 
-## Current BRSP candidate receipt — 2026-08-30
+## Current BRSP candidate receipt — 2026-08-31
 
 ### Identity and environment
 
@@ -26,7 +26,7 @@ Every result records the lowest tier that directly exercises the claim. A higher
 | --- | --- |
 | Repository | `GeorgeFejer91/browser-remote-sync-protocol` |
 | Protocol | BRSP/1, pre-1.0 reference |
-| Candidate lineage | Base commit `17b5cdb` plus the application-integration, qualification, core-hardening, and documentation update represented by the repository tree containing this receipt |
+| Candidate lineage | Published lineage through `130247b` plus the reusable application-target authority update represented by the repository tree containing this receipt |
 | Host used for local deterministic checks | Windows, Europe/Berlin operator environment |
 | Runtime | Node.js `v24.19.0`, npm `11.17.0` |
 | VDO SDK | Vendored `v1.5.5`; hashes enforced by repository checker |
@@ -42,7 +42,7 @@ The candidate was checked with:
 npm run check
 ```
 
-Recorded local result on 2026-08-30: `npm run check` **passed** the repository contract/hash/link checks and all **48/48** Node tests, with zero failures, skips, cancellations, or todos. `npm run check` invokes `node --test`, so this receipt does not pretend a redundant separately captured `npm test` run occurred.
+Recorded local result on 2026-08-31: `npm run check` **passed** the repository contract/hash/link checks and all **81/81** Node tests, with zero failures, skips, cancellations, or todos. `npm run check` invokes `node --test`, so this receipt does not pretend a redundant separately captured `npm test` run occurred.
 
 The suite covers, at minimum:
 
@@ -56,6 +56,10 @@ The suite covers, at minimum:
 - explicit multi-target selection, SDK UUID binding, retryable selection failure, and rejection of initial reliable-send failure;
 - Stop-wins lifecycle races, complete failed-start cleanup, and inert stale SDK completions/callbacks;
 - inert application wrapper construction, exact app reducer validation, rejection of an immortal initially-active lease, momentary lease expiry, persistent hold, and producer-first teardown;
+- reusable application-target authority models with explicit scope grants,
+  derived capabilities, privacy-safe public projection, convergent local and
+  remote reducer paths, state-gated runner commands, latest-intent fencing,
+  and redacted native-effect failures;
 - synchronous demo pairing-material clearing and fresh values on restart;
 - pinned SDK hashes, local links, no media capture, and no direct private signaling WebSocket use;
 - native Meta Quest integration fragments: byte-stable manifest/profile,
@@ -64,7 +68,7 @@ The suite covers, at minimum:
   reliable backpressure fail-close, producer-first Stop, and static
   Kotlin/Android authority boundaries.
 
-The final CI run for the publication commit remains the immutable remote confirmation. The local 48/48 result applies to this candidate tree and must not be copied forward after code, tests, pinned SDK, application profile, native integration fragment, or hosted companion changes.
+The final CI run for the publication commit remains the immutable remote confirmation. The local 81/81 result applies to this candidate tree and must not be copied forward after code, tests, pinned SDK, application profile, native integration fragment, or hosted companion changes.
 
 ### Browser smoke evidence
 
